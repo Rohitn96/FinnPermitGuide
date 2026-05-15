@@ -65,18 +65,18 @@ export default function Home() {
         <button
           onClick={handleClear}
           aria-label="Home — clear conversation"
-          className="w-9 h-9 bg-white rounded-full flex items-center justify-center shrink-0 hover:bg-blue-100 transition-colors"
+          className="w-10 h-10 bg-white rounded-full flex items-center justify-center shrink-0 hover:bg-blue-100 transition-colors"
         >
-          <span className="text-[#003399] font-bold text-sm select-none">MG</span>
+          <span className="text-[#003399] font-black text-sm select-none tracking-tight">MG</span>
         </button>
 
         <div className="min-w-0">
-          <h1 className="font-semibold text-base leading-tight">MigriGuide</h1>
-          <p className="text-blue-200 text-xs">Finnish Immigration Assistant</p>
+          <h1 className="font-black text-lg leading-tight tracking-tight">MigriGuide</h1>
+          <p className="text-blue-200 text-xs font-medium">AI Assistant for Finnish Immigration</p>
         </div>
 
         <div className="ml-auto flex items-center gap-2 shrink-0">
-          <span className="bg-[#002277] text-blue-200 text-xs px-2 py-0.5 rounded select-none">
+          <span className="bg-white text-[#003399] text-sm font-black px-3 py-1 rounded-full select-none tracking-tight shadow-sm">
             Unofficial · Beta
           </span>
 
@@ -99,23 +99,24 @@ export default function Home() {
 
       {/* ── Disclaimer banner ──────────────────────────────── */}
       {bannerVisible && (
-        <div className="shrink-0 bg-amber-50 border-b border-amber-200 px-4 py-2.5 flex items-start gap-3">
+        <div className="shrink-0 bg-amber-50 border-b-2 border-amber-300 px-4 py-3 flex items-start gap-3">
           <svg className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd"
               d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
               clipRule="evenodd" />
           </svg>
-          <p className="text-amber-800 text-xs leading-snug flex-1">
-            <strong>MigriGuide is not a lawyer and does not provide legal advice.</strong>{' '}
-            All answers come from official Finnish sources only. Always verify important information at{' '}
+          <p className="text-amber-900 text-xs leading-snug flex-1">
+            <strong className="font-bold">MigriGuide is not an official guide and does not provide legal advice.</strong>{' '}
+            All answers are sourced from official Finnish sources only. Always verify important information at{' '}
             <a href="https://migri.fi" target="_blank" rel="noopener noreferrer"
-              className="underline font-medium">migri.fi</a>{' '}
-            or consult a licensed professional.
+              className="underline font-bold">migri.fi</a>{' '}
+            or consult a licensed professional.{' '}
+            <span className="text-amber-700">Data last uploaded on 14/05/2026.</span>
           </p>
           <button
             onClick={() => setBannerVisible(false)}
             aria-label="Dismiss disclaimer"
-            className="text-amber-500 hover:text-amber-700 transition-colors shrink-0 mt-0.5"
+            className="text-amber-500 hover:text-amber-800 transition-colors shrink-0 mt-0.5"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -215,12 +216,14 @@ export default function Home() {
               </svg>
             </button>
           </form>
-          <p className="text-center text-[10px] text-gray-400 mt-2">
-            Unofficial tool · Not legal advice · Always verify at{' '}
-            <a href="https://migri.fi" target="_blank" rel="noopener noreferrer" className="underline">
-              migri.fi
-            </a>
-          </p>
+          <div className="mt-2 flex justify-center">
+            <p className="text-[10px] font-bold text-[#003399] bg-blue-50 border border-blue-200 rounded-full px-3 py-1">
+              Unofficial tool · Not legal advice · Always verify at{' '}
+              <a href="https://migri.fi" target="_blank" rel="noopener noreferrer" className="underline">
+                migri.fi
+              </a>
+            </p>
+          </div>
         </div>
       </div>
 

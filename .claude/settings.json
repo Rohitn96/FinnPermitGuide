@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(npx tsc *)",
-      "Bash(npx next *)"
+      "Bash(npx next *)",
+      "Bash(dir \"C:\\\\Users\\\\rohit\\\\OneDrive\\\\Desktop\\\\migri-assistant\\\\Testing\" /b)",
+      "Bash(npm install *)"
     ]
   }
 }

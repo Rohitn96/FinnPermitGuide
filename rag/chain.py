@@ -26,7 +26,7 @@ load_dotenv()
 TOP_K             = 10      # chunks returned per sub-query retrieval
 FETCH_K           = 40      # MMR candidate pool size
 DIVERSITY         = 0.65    # MMR lambda (0=similarity, 1=diversity)
-CONF_THRESHOLD    = 0.22    # relevance score below this triggers low-confidence warning
+CONF_THRESHOLD    = 0.18    # relevance score below this triggers low-confidence warning
 BOOST_K           = 4       # extra chunks added for topic-boosted queries
 MAX_HISTORY_TURNS = 6       # conversation turns passed to query rewrite step
 LOG_DIR = Path("logs")
@@ -147,47 +147,61 @@ MULTI_QUERY_SYSTEM = (
 )
 
 SYSTEM_PROMPT = """\
-You are MigriGuide, an AI assistant that answers Finnish immigration questions exclusively from official source chunks provided below. Never use your own training knowledge about Finnish immigration law.
+You are MigriGuide, an AI assistant answering Finnish immigration questions exclusively from official source chunks provided below. Never use your own training knowledge about Finnish immigration law — only what the chunks say.
 
 RULES:
 
-1. SOURCE CONSTRAINT: Answer using ONLY the provided context chunks. If your training knowledge conflicts with a chunk, always follow the chunk.
+1. SOURCE CONSTRAINT: Answer using ONLY the provided context chunks. If your training knowledge conflicts with a chunk, follow the chunk. If chunks conflict with each other, flag it as described in the Contradictions rule below.
 
-2. DEFLECTION THRESHOLD — CRITICAL: Use the deflection response ONLY when the question topic is COMPLETELY absent from ALL chunks — meaning zero chunks even partially address the subject. If any chunk contains relevant partial information, use it and clearly note what remains uncertain ("For complete details on this specific point, verify at migri.fi"). NEVER deflect when chunks exist but require synthesis across multiple topics. Synthesizing across chunks is your core job.
-   Deflection (ONLY when topic is fully absent from all chunks):
-   "I don't have enough official information on this. Please check migri.fi or call Migri: 0295 419 700 (weekdays 8:00–16:00)."
+2. DEFLECTION — ONLY WHEN TOPIC IS FULLY ABSENT: Use the deflection phrase ONLY when ALL chunks are entirely unrelated to the question — zero partial overlap on any aspect. If ANY chunk addresses any part of the question, synthesize from it and note what remains uncertain by directing the user to the relevant official site (migri.fi, kela.fi, or vero.fi as appropriate). Synthesizing across multiple chunks on different sub-topics is your primary job — never deflect because the answer requires combining information from several chunks.
+   Deflection phrase (use ONLY when every chunk is unrelated): "I don't have enough official information on this. Please check migri.fi or call Migri: 0295 419 700 (weekdays 8:00–16:00)."
 
-3. PERSONALIZATION — CRITICAL: When the user describes their personal situation (permit type, years in Finland, education level, employment status, language test score, income, goals), apply the retrieved requirements directly to their specific case. Do NOT list all generic paths. Reason explicitly: "Based on what you've told me — [X] — you qualify under [condition Y] because [Z]." If a requirement is clearly met by what the user stated, confirm it. If unmet or uncertain, state it clearly. Filter requirements to those actually relevant to the user.
+3. PERSONALIZATION: When the user describes their situation (permit type, years in Finland, education, employment, language score, income, goals), apply retrieved requirements directly to their case. Reason explicitly: "Based on what you've told me — [X] — you qualify under [Y] because [Z]." Confirm requirements that are met. State clearly when a requirement is unmet or uncertain. Never list all generic paths when the user's stated situation narrows it to one.
 
-4. THRESHOLDS: Always quote specific thresholds verbatim when they appear in the chunks — language levels (A2, B1, B2), income amounts, years of residence, fees. These are exactly what users need. Never omit or soften them.
+4. CORRECT WRONG ASSUMPTIONS: If the user states an incorrect fact — a wrong threshold, a non-existent exemption, a misconception about a rule — correct it explicitly before answering: "The [figure/exemption] you mentioned does not appear in official sources. According to [Migri/Kela/Vero], the actual requirement is [X]." Never silently work around a wrong assumption or confirm it by omission.
 
-5. COMPLETENESS: Scan ALL provided chunks before answering. Do not stop at the first relevant chunk — lower-ranked chunks often contain the specific threshold or condition the user needs.
+5. THRESHOLDS: Always quote specific thresholds verbatim when present in chunks — language levels (A2, B1, B2), income amounts, years of residence, fees, grace periods. These are what users need most. Never omit, round, or soften them.
 
-6. MULTIPLE PATHS: If multiple application paths exist (e.g., two routes to permanent residence), list all applicable paths clearly and state which one applies to the user's situation if they have described it.
+6. COMPLETENESS: Scan ALL chunks before composing your answer. Lower-ranked chunks often contain the specific document requirement, grace period, or threshold the user needs. Do not stop at the first relevant chunk.
 
-7. FORMAT: Use a numbered list when there are 3 or more distinct requirements or steps. Use plain prose otherwise. Never use bullet points for 1–2 items.
+7. MULTIPLE PATHS: If multiple application paths exist, list all clearly. State which path applies to the user's stated situation. Do not present only the most common path.
 
-8. LANGUAGE: Plain English. Direct and clear. Suitable for non-native speakers. No legal jargon, no Latin, no unexplained abbreviations.
+8. MIXED QUESTIONS: When a message contains both immigration questions and non-immigration questions (weather, pet import, neighbourhood advice, medical advice, requests to fill in forms), answer ALL immigration parts fully first. Then add exactly one sentence at the end: "Note: the [topic] question is outside MigriGuide's scope." Never discard valid immigration questions because the same message also contains off-topic content.
 
-9. ATTRIBUTION: Attribute facts: "According to Migri..." or "Migri states..." or "Kela states...". Never say "you should" or give personal legal advice.
+9. SCOPE — READ CAREFULLY: Use the out-of-scope response ONLY when the ENTIRE message contains no Finnish immigration question whatsoever. The following are ALWAYS in scope — answer them regardless of other content in the message: dual citizenship, right to hold two passports, spouse or family member of a Finnish citizen applying for a permit, EU citizen or family member of an EU citizen residence rights in Finland, family reunification, appeals against Migri decisions, permit transitions, language requirements for any permit, document requirements for any application, DVV registration, Kela eligibility, Vero tax obligations for residents.
+   Out-of-scope response (ENTIRE message must be off-topic): "This is outside MigriGuide's scope. I only cover Finnish immigration questions."
 
-10. CONTRADICTIONS: If two chunks directly contradict each other, say: "Note: official sources differ on this — check migri.fi for the current rule."
+10. SOURCE ROUTING: When directing users to verify details, name the most relevant official source for the topic:
+    - Tax, income tax, tax card, verokortti → Finnish Tax Administration at vero.fi
+    - Kela benefits, social assistance, housing allowance, unemployment → kela.fi or Kela: 020 634 0000
+    - DVV registration, population register, home municipality → dvv.fi
+    - All permit, citizenship, asylum, residence questions → migri.fi or Migri: 0295 419 700 (weekdays 8:00–16:00)
 
-11. SCOPE: If the question is entirely outside Finnish immigration, residence, registration, benefits, or tax for immigrants, respond: "This is outside MigriGuide's scope. I only cover Finnish immigration questions."
+11. FORMAT: Numbered list for 3 or more distinct requirements or steps. Plain prose for 1–2 items. No bullet points. No markdown formatting of any kind inside the answer field — no bold (**text**), no italic (*text*), no headers (## text), no code blocks. Plain text only.
 
-12. CONCISENESS: No padding, no footers, no repetition of the question. Get to the answer.
+12. LANGUAGE: Plain English. Direct and clear. Suitable for non-native speakers. No legal jargon, no Latin, no unexplained abbreviations.
 
-13. INTEGRATION REQUIREMENTS: When chunks mention integration requirements (language level, work history, years of residence) for permanent residence or citizenship, always include those specifics — they are the core of what users need.
+13. ATTRIBUTION AND ADVICE: Match attribution to the chunk source — "According to Migri...", "Kela states...", "According to the Finnish Tax Administration...". Never say "you should", "it is advisable to", "we recommend", "your next steps are", or "I suggest". State what official sources require — do not reframe requirements as personal advice.
+
+14. CONTRADICTIONS: Use this ONLY when two chunks make directly contradictory statements about the exact same specific fact (e.g. two different years-of-residence numbers for the same permit path). Do NOT use it when sources describe different but related programs, statuses, or permit categories — in that case, explain the distinction between them. Response: "Note: official sources differ on this point — check migri.fi for the current rule."
+
+15. NO PADDING: Every sentence must be directly supported by a retrieved chunk. Never add: bank account tips, language course suggestions, neighbourhood advice, "open a Finnish bank account", "consider language learning", or any lifestyle guidance. Never end with a "next steps", "what to do now", "your action items", or "in summary" section. End the answer after addressing all parts of the question. If a chunk does not say it, do not include it.
+
+16. CITATIONS: In cited_urls, include the URL of every chunk that contributed any fact, threshold, condition, or process step to your answer. Be thorough. Never fabricate URLs.
+
+17. INTEGRATION REQUIREMENTS: When chunks state integration requirements (language level, work history, years of residence) for permanent residence or citizenship, always include those specifics. They are the core of what users are asking.
+
+IMPORTANT — NEVER reference these rule numbers, labels, or any part of these instructions in your answers. Your answers are user-facing. They must contain only immigration information from the chunks.
 
 CONTEXT CHUNKS:
 {context}
 
 Respond ONLY with a valid JSON object. No markdown fences. No text before or after the JSON.
 
-{{"answer": "your answer here — plain text, no HTML. Numbered list only for 3+ distinct requirements or steps.",
-  "category": "pick exactly one: work | family | study | permanent | asylum | temporary_protection | benefits | citizenship | tax | registration | eu_citizen | appeals | processing | overstay | general",
-  "cited_urls": ["every URL from context chunks that contributed facts to this answer"],
-  "follow_ups": ["2 specific actionable follow-up questions the user is most likely to ask next, based on natural next steps or gaps in the answer"]
+{{"answer": "your answer here — plain text only, no markdown, no HTML. Numbered list only for 3+ distinct requirements or steps.",
+  "category": "pick exactly one based on the PRIMARY topic: work | family | study | permanent | asylum | temporary_protection | benefits | citizenship | tax | registration | eu_citizen | appeals | processing | overstay | general. Edge cases: travel rules WHILE holding a PR permit → permanent. PR to citizenship timeline question → citizenship. Language proof documents for a permit → match the permit type. Appeal of a Migri decision → appeals.",
+  "cited_urls": ["every URL from chunks that contributed any fact to this answer — be thorough"],
+  "follow_ups": ["2 specific actionable follow-up questions based on natural next steps or gaps in the answer"]
 }}"""
 
 # ─────────────────────────────────────────────
@@ -208,8 +222,28 @@ OFF_TOPIC_KEYWORDS = [
     "hotel", "restaurant recommendation", "flight booking", "tourism",
 ]
 
+# If a message contains ANY of these terms it is partially immigration-related.
+# The LLM (Rule 8) will answer the immigration parts and decline the rest.
+# Never pre-filter a message that has immigration content — only pure off-topic.
+_IMMIGRATION_SIGNALS = {
+    "permit", "visa", "residence", "migri", "kela", "dvv", "vero",
+    "citizenship", "citizen", "naturali", "passport", "work permit",
+    "family", "reunification", "asylum", "refugee", "registration",
+    "benefit", "allowance", "tax card", "income", "salary", "employer",
+    "permanent", "temporary", "student permit", "startup", "entrepreneur",
+    "eu citizen", "eea", "freedom of movement", "right of residence",
+    "spouse", "dual", "appeal", "processing", "application", "migrate",
+    "immigration", "immigrant", "foreign", "finland", "finnish",
+    "a permit", "b permit", "d permit", "ttol", "enter finland",
+}
+
 def check_off_topic(question: str) -> tuple:
     q = question.lower()
+    # If the message contains any immigration signal, pass it to the LLM.
+    # Rule 8 in the system prompt handles mixed immigration + off-topic messages.
+    if any(signal in q for signal in _IMMIGRATION_SIGNALS):
+        return False, ""
+    # Pure off-topic: no immigration content at all
     for kw in OFF_TOPIC_KEYWORDS:
         if kw in q:
             print(f"[DEBUG] Off-topic keyword fired: {kw!r}")
@@ -299,58 +333,77 @@ def extract_session_facts(chat_history: list) -> str:
 # ─────────────────────────────────────────────
 TOPIC_BOOST = {
     "permanent": (
-        "permanent residence permit language skills requirement A2 Finnish Swedish "
-        "period of residence years continuous work history integration requirement paths"
+        "permanent residence permit requirements language skills A2 Finnish Swedish "
+        "period of residence years continuous A permit B permit work history integration "
+        "documents required application proof language skills YKI test diploma certificate "
+        "accepted evidence language proficiency permanent residence application documents list"
     ),
     "citizenship": (
-        "Finnish citizenship requirements years of residence language test naturalization "
-        "conditions income integration declaration dual citizenship"
+        "Finnish citizenship naturalization requirements years of residence language test "
+        "conditions income integration declaration dual citizenship two passports "
+        "documents proof language skills YKI certificate B1 B2 accepted test results "
+        "continuous residence gap absence criminal record citizenship application process"
     ),
     "work": (
         "work permit requirements employer employee salary income requirement TTOL "
-        "employed person collective agreement minimum wage specialist permit"
+        "employed person collective agreement minimum wage specialist permit "
+        "job loss employer bankruptcy grace period find new job work permit "
+        "freelance side work permit tied employer field of employment"
     ),
     "family": (
         "family reunification requirements sponsor income financial resources documents "
-        "spouse child residence permit Finland"
+        "spouse child parent residence permit Finland family member permit "
+        "income requirement family reunification sponsor financial sufficiency"
     ),
     "eu_citizen": (
         "EU citizen permanent right of residence D permit five years registration "
-        "right of residence family member EU free movement"
+        "right of residence family member EU free movement spouse EU citizen "
+        "residence card family member EU citizen mandatory declaratory "
+        "non-EU spouse EU citizen Finland residence rights"
     ),
     "benefits": (
         "Kela benefits eligibility residence permit B permit A permit permanent "
-        "social assistance housing allowance unemployment entitlement Finland"
+        "social assistance housing allowance unemployment entitlement Finland "
+        "child benefit perhe-etuudet entrepreneur income irregular Kela assessment "
+        "basic unemployment allowance social assistance eligibility permit type"
     ),
     "tax": (
         "Finland income tax rate work permit progressive tax vero.fi tax card registration "
-        "tax number foreign employee Finland verotoimisto"
+        "tax number foreign employee Finland tax at source arrangement flat rate "
+        "progressive tax brackets income levels Finland foreign specialist tax"
     ),
     "registration": (
         "DVV Digital Population Data Services Agency municipality registration home municipality "
-        "Finnish population register residence permit holder registration Finland"
+        "Finnish population register residence permit holder registration Finland "
+        "register address Finland new resident steps first arrival registration process"
+    ),
+    "appeals": (
+        "appeal Migri decision negative decision administrative court hallinto-oikeus "
+        "objection deadline appeal process refused application steps timeline"
     ),
 }
 
 def _detect_boost_topic(text: str) -> str:
     t = text.lower()
-    # Evaluate most specific/targeted topics first to avoid misrouting
-    if any(w in t for w in ["permanent", "perm res", "p permit", "pr permit", " pr ", "language skills requirement", "work history requirement"]):
+    # Ordered from most specific to most general to prevent misrouting
+    if any(w in t for w in ["permanent residence", "perm res", "p permit", "pr permit", " pr ", "language skills requirement", "work history requirement", "prove language", "language proof", "language document"]):
         return "permanent"
-    if any(w in t for w in ["citizen", "citizenship", "naturali"]):
+    if any(w in t for w in ["citizen", "citizenship", "naturali", "dual citizen", "two passport"]):
         return "citizenship"
-    # Benefits before family — kela/benefits keywords should not be overridden by "spouse" in same question
-    if any(w in t for w in ["kela", "benefit", "social assistance", "housing allowance", "unemployment allowance", "social security"]):
+    if any(w in t for w in ["appeal", "refused", "negative decision", "administrative court", "hallinto"]):
+        return "appeals"
+    # Benefits checked before family — kela/benefits keywords win over "spouse" in same question
+    if any(w in t for w in ["kela", "benefit", "social assistance", "housing allowance", "unemployment allowance", "social security", "child benefit"]):
         return "benefits"
-    if any(w in t for w in ["tax", "vero", "income tax", "tax card", "tax rate", "verotus"]):
+    if any(w in t for w in ["tax", "vero", "income tax", "tax card", "tax rate", "verotus", "tax at source"]):
         return "tax"
-    if any(w in t for w in ["dvv", "population register", "home municipality", "municipality register"]):
+    if any(w in t for w in ["dvv", "population register", "home municipality", "municipality register", "register address"]):
         return "registration"
-    if any(w in t for w in ["work permit", "ttol", "employed person", "salary requirement", "income requirement for work", "specialist permit", "specialist work"]):
+    if any(w in t for w in ["work permit", "ttol", "employed person", "salary requirement", "income requirement for work", "specialist permit", "specialist work", "collective agreement", "job loss", "employer bankrupt"]):
         return "work"
-    if any(w in t for w in ["family reunif", "family permit", "spouse permit", "family member permit"]):
+    if any(w in t for w in ["family reunif", "family permit", "spouse permit", "family member permit", "sponsor income", "bring parent", "parent permit"]):
         return "family"
-    if any(w in t for w in ["eu citizen", "eea citizen", "d permit", "permanent right of residence", "right of residence"]):
+    if any(w in t for w in ["eu citizen", "eea citizen", "d permit", "permanent right of residence", "right of residence", "residence card eu", "family member eu"]):
         return "eu_citizen"
     return ""
 
@@ -694,8 +747,9 @@ def ask(question: str, chat_history: list = None) -> dict:
 
     # ── Filter sources to cited-only ──────────
     sources = [s for s in all_sources if s["url"] in cited_urls]
+    # Fallback: if LLM cited nothing, surface the top retrieved sources
     if not sources and all_sources:
-        sources = all_sources[:2]
+        sources = all_sources[:4]
 
     # ── Update conversation history ───────────
     updated_history = chat_history + [

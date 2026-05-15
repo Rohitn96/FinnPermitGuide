@@ -1,0 +1,30 @@
+# fly.toml — MigriGuide FastAPI backend
+# Deploy: flyctl launch (first time) | flyctl deploy (updates)
+# Secrets: flyctl secrets set OPENAI_API_KEY=... PINECONE_API_KEY=... PINECONE_INDEX_NAME=migri-guide
+
+app            = "migriguide-api"
+primary_region = "ams"          # Amsterdam — closest to Finland
+
+[build]
+
+[env]
+  PORT         = "8000"
+  USE_PINECONE = "true"
+
+[http_service]
+  internal_port       = 8000
+  force_https         = true
+  auto_stop_machines  = "stop"   # sleep after inactivity to stay in free tier
+  auto_start_machines = true     # wake on first request (~5s cold start)
+  min_machines_running = 0
+  processes            = ["app"]
+
+  [http_service.concurrency]
+    type       = "connections"
+    hard_limit = 10
+    soft_limit = 5
+
+[[vm]]
+  memory   = "256mb"
+  cpu_kind = "shared"
+  cpus     = 1
