@@ -1,0 +1,33 @@
+# MigriGuide dependencies
+
+# HTTP & scraping
+requests==2.32.3
+beautifulsoup4==4.12.3
+lxml==5.2.2
+
+# PDF extraction
+PyMuPDF>=1.24.5
+
+# LangChain core + text splitting
+langchain==0.2.16
+langchain-core==0.2.38
+
+# Embeddings (OpenAI)
+langchain-openai==0.1.25
+openai==1.40.0
+
+# Vector stores
+langchain-chroma==0.1.4
+chromadb==0.5.5
+
+# Pinecone (Stage 3 — production vector DB)
+# langchain-pinecone is broken on Py3.14 (simsimd dep conflict); use pinecone SDK directly
+pinecone>=9.0.0
+
+# API & UI
+fastapi>=0.111.0
+uvicorn>=0.30.0
+streamlit>=1.36.0
+
+# Env management
+python-dotenv==1.0.1

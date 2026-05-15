@@ -1,0 +1,25 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+
+# Environment — NEVER commit keys
+.env
+
+# Local vector DB (can be rebuilt; 150MB+)
+data/chroma_db/
+
+# Raw scraped data (can be re-scraped)
+data/raw/
+
+# Session logs (private user data)
+logs/
+
+# OS
+.DS_Store
+Thumbs.db

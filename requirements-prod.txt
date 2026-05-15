@@ -1,0 +1,11 @@
+# Production-only deps — no chromadb, no streamlit, no scraping libs
+# USE_PINECONE=true so the Chroma branch never loads
+langchain==0.2.16
+langchain-core==0.2.38
+langchain-openai==0.1.25
+openai==1.40.0
+pinecone>=9.0.0
+numpy>=1.26.0
+fastapi>=0.111.0
+uvicorn[standard]>=0.30.0
+python-dotenv==1.0.1

@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: migriguide-api
+    runtime: python
+    region: frankfurt
+    plan: free
+    buildCommand: pip install -r requirements-prod.txt
+    startCommand: uvicorn api.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: PINECONE_API_KEY
+        sync: false
+      - key: PINECONE_INDEX_NAME
+        value: migri-guide
+      - key: USE_PINECONE
+        value: "true"
+      - key: PYTHON_VERSION
+        value: 3.12.0
