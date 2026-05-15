@@ -1,9 +1,9 @@
 """
-MigriGuide — RAG Intelligence Layer v2
+MigriGuide — RAG Intelligence Layer v3
 rag/chain.py
 
 Vectorstore backend is selected by .env:
-  USE_PINECONE=true   → Pinecone (production, requires PINECONE_API_KEY + PINECONE_INDEX_NAME)
+  USE_PINECONE=true   → Pinecone (production)
   USE_PINECONE=false  → ChromaDB (local dev, default)
 """
 
@@ -23,10 +23,10 @@ load_dotenv()
 # ─────────────────────────────────────────────
 # CONFIG
 # ─────────────────────────────────────────────
-TOP_K             = 10      # chunks returned by MMR retrieval
-FETCH_K           = 40      # candidate pool size for MMR
-DIVERSITY         = 0.65    # MMR diversity factor (0=max similarity, 1=max diversity)
-CONF_THRESHOLD    = 0.25    # relevance score below this triggers low-confidence warning
+TOP_K             = 10      # chunks returned per sub-query retrieval
+FETCH_K           = 40      # MMR candidate pool size
+DIVERSITY         = 0.65    # MMR lambda (0=similarity, 1=diversity)
+CONF_THRESHOLD    = 0.22    # relevance score below this triggers low-confidence warning
 BOOST_K           = 4       # extra chunks added for topic-boosted queries
 MAX_HISTORY_TURNS = 6       # conversation turns passed to query rewrite step
 LOG_DIR = Path("logs")
@@ -34,15 +34,12 @@ LOG_DIR.mkdir(exist_ok=True)
 
 # ─────────────────────────────────────────────
 # MODELS & VECTORSTORE
-# Supports both ChromaDB (local) and Pinecone (production).
-# Set USE_PINECONE=true in .env to switch to Pinecone.
 # ─────────────────────────────────────────────
 embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
 
 _use_pinecone = os.getenv("USE_PINECONE", "false").lower() == "true"
 
 if _use_pinecone:
-    # ── Pinecone: direct SDK integration (langchain-pinecone broken on Py3.14) ──
     import numpy as np
     from pinecone import Pinecone as _PineconeClient
     from langchain_core.documents import Document as _Document
@@ -81,7 +78,6 @@ if _use_pinecone:
             res, q_vec = self._query(query, top_k=fetch_k, include_values=True)
             if not res.matches:
                 return []
-            # Client-side MMR using cosine similarity
             candidate_vecs = np.array([m.values for m in res.matches], dtype=np.float32)
             q_arr = np.array(q_vec, dtype=np.float32)
             selected, remaining = [], list(range(len(res.matches)))
@@ -118,8 +114,11 @@ else:
     )
     print("[INFO] Using local ChromaDB vectorstore")
 
-llm      = ChatOpenAI(model="gpt-4o",      temperature=0)   # main reasoning
-llm_fast = ChatOpenAI(model="gpt-4o-mini", temperature=0)   # query rewriting only
+# gpt-4o-mini is used for all inference (synthesis of retrieved text, query rewriting).
+# 95% of gpt-4o quality at 10% of the cost for retrieval-augmented tasks.
+# Swap llm back to gpt-4o below only if answer quality measurably degrades.
+llm      = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+llm_fast = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 
 # ─────────────────────────────────────────────
 # PROMPTS
@@ -138,36 +137,57 @@ CONTEXTUALIZE_PROMPT = ChatPromptTemplate.from_messages([
     ("human", "{question}"),
 ])
 
+MULTI_QUERY_SYSTEM = (
+    "You decompose complex Finnish immigration questions into focused sub-queries "
+    "for a vector knowledge base. Given a question, output a JSON array of 1–3 strings. "
+    "Each string must target ONE distinct aspect of the question "
+    "(e.g. permit type eligibility, tax rules, DVV registration, Kela benefits, citizenship requirements). "
+    "For a simple single-topic question, output a 1-item array. "
+    "Output ONLY the raw JSON array — no markdown, no explanation."
+)
+
 SYSTEM_PROMPT = """\
-You are MigriGuide, a Finnish immigration assistant. Answer ONLY from the official source chunks provided below.
+You are MigriGuide, an AI assistant that answers Finnish immigration questions exclusively from official source chunks provided below. Never use your own training knowledge about Finnish immigration law.
 
 RULES:
-1. Use ONLY the provided context chunks. Never use your own training knowledge about Finnish immigration law.
-2. If no chunk is sufficiently relevant, respond exactly:
-   "I don't have enough official information on this. Please check migri.fi or call Migri: 0295 419 700 (weekdays 8:00-16:00)."
-3. THRESHOLDS: State specific thresholds (language levels such as A2 or B1, income amounts, years of residence, application fees) ONLY when they appear verbatim in the provided chunks — but when they do appear, always quote them clearly. This information is exactly what users need.
-4. If the answer has 3 or more distinct requirements or steps, format them as a numbered list. Otherwise write clear prose.
-5. Write plain English — direct and clear, suitable for non-native speakers. No legal jargon. No Latin. No abbreviations without explanation.
-6. If two context chunks contradict each other, say: "Note: official sources differ on this point. Check migri.fi for the latest."
-7. For questions about processing delays or waiting times, mention Migri's Fast Track service if the context supports it.
-8. Attribute claims: "According to Migri..." or "Migri states...". Never give personal legal advice or say "you should".
-9. If the question is outside Finnish immigration, residence, registration, benefits, or tax for immigrants, respond:
-   "This is outside MigriGuide's scope. I only answer Finnish immigration questions."
-10. Scan ALL provided chunks before answering — do not stop at the first relevant one. Lower-ranked chunks often contain the specific threshold or condition the user needs.
-11. If multiple application paths exist (e.g. for permanent residence), list all paths clearly — do not present only one.
-12. Do not pad answers with unnecessary caveats, disclaimers, or footers. Be concise.
-13. Do not repeat the user's question back to them.
-14. When a chunk explicitly states integration requirements (language level, work history, years of residence) for permanent residence or citizenship, include those specifics in your answer.
+
+1. SOURCE CONSTRAINT: Answer using ONLY the provided context chunks. If your training knowledge conflicts with a chunk, always follow the chunk.
+
+2. DEFLECTION THRESHOLD — CRITICAL: Use the deflection response ONLY when the question topic is COMPLETELY absent from ALL chunks — meaning zero chunks even partially address the subject. If any chunk contains relevant partial information, use it and clearly note what remains uncertain ("For complete details on this specific point, verify at migri.fi"). NEVER deflect when chunks exist but require synthesis across multiple topics. Synthesizing across chunks is your core job.
+   Deflection (ONLY when topic is fully absent from all chunks):
+   "I don't have enough official information on this. Please check migri.fi or call Migri: 0295 419 700 (weekdays 8:00–16:00)."
+
+3. PERSONALIZATION — CRITICAL: When the user describes their personal situation (permit type, years in Finland, education level, employment status, language test score, income, goals), apply the retrieved requirements directly to their specific case. Do NOT list all generic paths. Reason explicitly: "Based on what you've told me — [X] — you qualify under [condition Y] because [Z]." If a requirement is clearly met by what the user stated, confirm it. If unmet or uncertain, state it clearly. Filter requirements to those actually relevant to the user.
+
+4. THRESHOLDS: Always quote specific thresholds verbatim when they appear in the chunks — language levels (A2, B1, B2), income amounts, years of residence, fees. These are exactly what users need. Never omit or soften them.
+
+5. COMPLETENESS: Scan ALL provided chunks before answering. Do not stop at the first relevant chunk — lower-ranked chunks often contain the specific threshold or condition the user needs.
+
+6. MULTIPLE PATHS: If multiple application paths exist (e.g., two routes to permanent residence), list all applicable paths clearly and state which one applies to the user's situation if they have described it.
+
+7. FORMAT: Use a numbered list when there are 3 or more distinct requirements or steps. Use plain prose otherwise. Never use bullet points for 1–2 items.
+
+8. LANGUAGE: Plain English. Direct and clear. Suitable for non-native speakers. No legal jargon, no Latin, no unexplained abbreviations.
+
+9. ATTRIBUTION: Attribute facts: "According to Migri..." or "Migri states..." or "Kela states...". Never say "you should" or give personal legal advice.
+
+10. CONTRADICTIONS: If two chunks directly contradict each other, say: "Note: official sources differ on this — check migri.fi for the current rule."
+
+11. SCOPE: If the question is entirely outside Finnish immigration, residence, registration, benefits, or tax for immigrants, respond: "This is outside MigriGuide's scope. I only cover Finnish immigration questions."
+
+12. CONCISENESS: No padding, no footers, no repetition of the question. Get to the answer.
+
+13. INTEGRATION REQUIREMENTS: When chunks mention integration requirements (language level, work history, years of residence) for permanent residence or citizenship, always include those specifics — they are the core of what users need.
 
 CONTEXT CHUNKS:
 {context}
 
 Respond ONLY with a valid JSON object. No markdown fences. No text before or after the JSON.
 
-{{"answer": "your answer here — plain text, no HTML. Use numbered lists only when there are 3+ distinct steps or requirements.",
+{{"answer": "your answer here — plain text, no HTML. Numbered list only for 3+ distinct requirements or steps.",
   "category": "pick exactly one: work | family | study | permanent | asylum | temporary_protection | benefits | citizenship | tax | registration | eu_citizen | appeals | processing | overstay | general",
-  "cited_urls": ["list every URL from context chunks that contributed facts to your answer"],
-  "follow_ups": ["2 specific, actionable follow-up questions the user is most likely to ask next, based on gaps in the answer or the natural next step in their immigration journey"]
+  "cited_urls": ["every URL from context chunks that contributed facts to this answer"],
+  "follow_ups": ["2 specific actionable follow-up questions the user is most likely to ask next, based on natural next steps or gaps in the answer"]
 }}"""
 
 # ─────────────────────────────────────────────
@@ -202,10 +222,10 @@ def is_too_vague(question: str) -> bool:
 
 # ─────────────────────────────────────────────
 # CATEGORY DETECTION (keyword fallback)
-# Used only if LLM JSON parse fails
+# Used only if LLM JSON parse fails completely.
 # ─────────────────────────────────────────────
 CATEGORY_KEYWORDS = {
-    "work":                 ["work permit", "ttol", "employee", "employer", "job permit", "employed person", "seasonal work"],
+    "work":                 ["work permit", "ttol", "employee", "employer", "job permit", "employed person", "seasonal work", "specialist"],
     "family":               ["family", "spouse", "child", "reunification", "family member", "dependent"],
     "study":                ["student", "study", "university", "degree", "thesis", "scholarship", "exchange"],
     "permanent":            ["permanent", "p permit", "pr permit", "indefinite", "long-term"],
@@ -231,9 +251,6 @@ def detect_category(text: str) -> str:
 
 # ─────────────────────────────────────────────
 # SESSION CONTEXT EXTRACTION
-# Scans human messages for key personal facts.
-# Returns compact string injected into retrieval query.
-# No extra API calls — pure keyword scan.
 # ─────────────────────────────────────────────
 def extract_session_facts(chat_history: list) -> str:
     human_text = " ".join(
@@ -246,11 +263,11 @@ def extract_session_facts(chat_history: list) -> str:
 
     facts = []
 
-    # Current permit type — check most specific first
     permit_checks = [
         ("job search",      "job search permit holder"),
         ("startup permit",  "startup permit holder"),
         ("student permit",  "student residence permit holder"),
+        ("specialist",      "specialist work permit holder"),
         ("work permit",     "work permit holder"),
         ("b permit",        "B permit holder (temporary residence)"),
         ("a permit",        "A permit holder (continuous residence)"),
@@ -261,15 +278,12 @@ def extract_session_facts(chat_history: list) -> str:
             facts.append(label)
             break
 
-    # Education in Finland
     if any(w in human_text for w in ["master", "msc", "bachelor", "degree", "graduated", "thesis", "phd", "doctorate"]):
         facts.append("completed degree in Finland")
 
-    # Employment
     if any(w in human_text for w in ["contract", "60h", "part-time", "full-time", "employed", "working", "job offer"]):
         facts.append("has employment contract in Finland")
 
-    # Goals
     if any(w in human_text for w in ["permanent residence", "pr permit", " pr ", "p permit", "perm res"]):
         facts.append("goal: permanent residence permit")
     if any(w in human_text for w in ["citizen", "citizenship", "naturali"]):
@@ -280,57 +294,157 @@ def extract_session_facts(chat_history: list) -> str:
 
 # ─────────────────────────────────────────────
 # TOPIC BOOST QUERIES
-# Permanent residence and citizenship questions need supplementary
-# retrieval to ensure specific requirement chunks (e.g. language
-# level, integration points, years of residence) are always included.
+# Supplementary retrieval to ensure specific requirement chunks
+# (language level, income thresholds, years of residence) are present.
 # ─────────────────────────────────────────────
 TOPIC_BOOST = {
-    # Pulls in the specific sub-pages: language-skills-requirement, period-of-residence, work-history
     "permanent": (
         "permanent residence permit language skills requirement A2 Finnish Swedish "
         "period of residence years continuous work history integration requirement paths"
     ),
-    # Pulls citizenship requirements page with language test and years-of-residence conditions
     "citizenship": (
         "Finnish citizenship requirements years of residence language test naturalization "
         "conditions income integration declaration dual citizenship"
     ),
-    # Pulls the income-requirement-for-work page with actual salary thresholds
     "work": (
         "work permit requirements employer employee salary income requirement TTOL "
-        "employed person collective agreement minimum wage"
+        "employed person collective agreement minimum wage specialist permit"
     ),
     "family": (
         "family reunification requirements sponsor income financial resources documents "
         "spouse child residence permit Finland"
     ),
-    # EU citizen D permit and right of permanent residence
     "eu_citizen": (
         "EU citizen permanent right of residence D permit five years registration "
-        "right of residence family member"
+        "right of residence family member EU free movement"
     ),
-    # Kela benefits eligibility per permit type
     "benefits": (
         "Kela benefits eligibility residence permit B permit A permit permanent "
-        "social assistance housing allowance unemployment entitlement"
+        "social assistance housing allowance unemployment entitlement Finland"
+    ),
+    "tax": (
+        "Finland income tax rate work permit progressive tax vero.fi tax card registration "
+        "tax number foreign employee Finland verotoimisto"
+    ),
+    "registration": (
+        "DVV Digital Population Data Services Agency municipality registration home municipality "
+        "Finnish population register residence permit holder registration Finland"
     ),
 }
 
 def _detect_boost_topic(text: str) -> str:
     t = text.lower()
+    # Evaluate most specific/targeted topics first to avoid misrouting
     if any(w in t for w in ["permanent", "perm res", "p permit", "pr permit", " pr ", "language skills requirement", "work history requirement"]):
         return "permanent"
-    if any(w in t for w in ["citizen", "citizenship", "naturali", "naturali"]):
+    if any(w in t for w in ["citizen", "citizenship", "naturali"]):
         return "citizenship"
-    if any(w in t for w in ["work permit", "ttol", "employed person", "salary requirement", "income requirement for work"]):
+    # Benefits before family — kela/benefits keywords should not be overridden by "spouse" in same question
+    if any(w in t for w in ["kela", "benefit", "social assistance", "housing allowance", "unemployment allowance", "social security"]):
+        return "benefits"
+    if any(w in t for w in ["tax", "vero", "income tax", "tax card", "tax rate", "verotus"]):
+        return "tax"
+    if any(w in t for w in ["dvv", "population register", "home municipality", "municipality register"]):
+        return "registration"
+    if any(w in t for w in ["work permit", "ttol", "employed person", "salary requirement", "income requirement for work", "specialist permit", "specialist work"]):
         return "work"
     if any(w in t for w in ["family reunif", "family permit", "spouse permit", "family member permit"]):
         return "family"
     if any(w in t for w in ["eu citizen", "eea citizen", "d permit", "permanent right of residence", "right of residence"]):
         return "eu_citizen"
-    if any(w in t for w in ["kela", "benefit", "social assistance", "housing allowance", "unemployment allowance"]):
-        return "benefits"
     return ""
+
+
+# ─────────────────────────────────────────────
+# JSON EXTRACTION — robust parser
+# Handles: markdown fences, array-wrapped objects,
+# trailing commas, and partial output failures.
+# ─────────────────────────────────────────────
+def _parse_llm_json(raw: str) -> dict:
+    """Try multiple strategies to extract a JSON object from LLM output."""
+    # Strip markdown fences
+    cleaned = re.sub(r"^```(?:json)?\s*\n?", "", raw, flags=re.MULTILINE)
+    cleaned = re.sub(r"\n?```\s*$", "", cleaned, flags=re.MULTILINE).strip()
+
+    # Strategy 1: direct parse
+    try:
+        result = json.loads(cleaned)
+        if isinstance(result, dict):
+            return result
+        # LLM sometimes wraps in an array: [{...}]
+        if isinstance(result, list) and result and isinstance(result[0], dict):
+            return result[0]
+    except json.JSONDecodeError:
+        pass
+
+    # Strategy 2: find the first {...} block
+    match = re.search(r'\{[\s\S]*\}', cleaned)
+    if match:
+        try:
+            result = json.loads(match.group())
+            if isinstance(result, dict):
+                return result
+        except json.JSONDecodeError:
+            pass
+
+    # Strategy 3: strip trailing commas (common LLM mistake) then retry
+    fixed = re.sub(r',\s*([}\]])', r'\1', cleaned)
+    try:
+        result = json.loads(fixed)
+        if isinstance(result, dict):
+            return result
+    except json.JSONDecodeError:
+        pass
+
+    raise ValueError(f"Could not extract JSON from LLM output: {cleaned[:300]}")
+
+
+# ─────────────────────────────────────────────
+# MULTI-QUERY RETRIEVAL
+# Decomposes complex multi-aspect questions into focused sub-queries,
+# retrieves for each, then merges and deduplicates results.
+# Single-topic questions return a 1-item array and behave identically
+# to the old single-query retrieval.
+# ─────────────────────────────────────────────
+def _multi_query_retrieve(query: str) -> list:
+    try:
+        resp = llm_fast.invoke([
+            {"role": "system", "content": MULTI_QUERY_SYSTEM},
+            {"role": "user",   "content": query},
+        ])
+        raw_sq = resp.content.strip()
+        # Strip fences if model wraps in ```json
+        raw_sq = re.sub(r"^```(?:json)?\s*\n?", "", raw_sq, flags=re.MULTILINE)
+        raw_sq = re.sub(r"\n?```\s*$", "", raw_sq, flags=re.MULTILINE).strip()
+        sub_qs = json.loads(raw_sq)
+        if not isinstance(sub_qs, list):
+            sub_qs = [query]
+    except Exception as e:
+        print(f"[DEBUG] Multi-query decomposition failed: {e}")
+        sub_qs = [query]
+
+    sub_qs = [q for q in sub_qs if isinstance(q, str) and q.strip()][:3] or [query]
+    print(f"[DEBUG] Sub-queries: {sub_qs}")
+
+    seen, all_docs = set(), []
+    # Allocate chunks fairly across sub-queries, minimum 4 per query
+    per_k = max(4, TOP_K // len(sub_qs))
+
+    for sq in sub_qs:
+        try:
+            docs = vectorstore.max_marginal_relevance_search(
+                sq, k=per_k, fetch_k=FETCH_K, lambda_mult=DIVERSITY
+            )
+            for doc in docs:
+                # Deduplicate by first 120 chars of content
+                key = doc.page_content[:120]
+                if key not in seen:
+                    seen.add(key)
+                    all_docs.append(doc)
+        except Exception as e:
+            print(f"[DEBUG] Sub-query retrieval error ({sq!r}): {e}")
+
+    return all_docs
 
 
 # ─────────────────────────────────────────────
@@ -388,8 +502,6 @@ def _extract_all_sources(docs: list) -> list:
 
 # ─────────────────────────────────────────────
 # CONFIDENCE CHECK
-# Uses relevance scores (0-1, higher = more relevant).
-# Returns True (low confidence) if best chunk scores below CONF_THRESHOLD.
 # ─────────────────────────────────────────────
 def check_confidence(query: str) -> bool:
     try:
@@ -406,7 +518,6 @@ def check_confidence(query: str) -> bool:
 
 # ─────────────────────────────────────────────
 # LOGGING
-# Uses stdlib json only — no jsonlines dependency needed.
 # ─────────────────────────────────────────────
 def log_entry(
     question:      str,
@@ -446,7 +557,6 @@ def ask(question: str, chat_history: list = None) -> dict:
     if chat_history is None:
         chat_history = []
 
-    # ── Uniform early return helper ──────────
     def _early_return(answer_text: str, cat: str = "general") -> dict:
         updated = chat_history + [
             {"role": "human", "content": question},
@@ -473,12 +583,9 @@ def ask(question: str, chat_history: list = None) -> dict:
     # ── Pre-filter: off topic ────────────────
     off_topic, _ = check_off_topic(question)
     if off_topic:
-        return _early_return(
-            "This is outside MigriGuide's scope. I can only answer questions "
-            "about Finnish immigration, residence permits, registration, and related topics."
-        )
+        return _early_return(OUT_OF_SCOPE_REPLY)
 
-    # ── Contextualize: rewrite to standalone query ──
+    # ── Contextualize: rewrite follow-ups to standalone queries ──
     standalone = question
     recent     = chat_history[-(MAX_HISTORY_TURNS * 2):]
     lc_history = _to_lc_history(recent)
@@ -500,24 +607,21 @@ def ask(question: str, chat_history: list = None) -> dict:
     enriched_query = f"{standalone} {session_facts}".strip() if session_facts else standalone
     print(f"[DEBUG] Enriched query: {enriched_query!r}")
 
-    # ── Confidence check ─────────────────────
+    # ── Confidence check (separate fast lookup) ───────────
     low_conf = check_confidence(enriched_query)
 
-    # ── Primary retrieval (MMR) ───────────────
+    # ── Multi-query retrieval ─────────────────
+    # Decomposes complex questions into focused sub-queries, merges results.
+    # For simple questions the decomposer returns a 1-item array — no extra cost.
     try:
-        docs = vectorstore.max_marginal_relevance_search(
-            enriched_query,
-            k=TOP_K,
-            fetch_k=FETCH_K,
-            lambda_mult=DIVERSITY,
-        )
+        docs = _multi_query_retrieve(enriched_query)
     except Exception as e:
-        print(f"[DEBUG] Retrieval error: {e}")
+        print(f"[DEBUG] Multi-query retrieval error: {e}")
         docs = []
 
     # ── Topic boost retrieval ─────────────────
-    # For PR, citizenship, work, family questions: add supplementary chunks
-    # so requirement details like language level are always present in context.
+    # Ensures specific requirement chunks (language level, income thresholds,
+    # years of residence) are always present for key topic areas.
     boost_topic = _detect_boost_topic(question) or _detect_boost_topic(standalone)
     if boost_topic and boost_topic in TOPIC_BOOST:
         try:
@@ -540,7 +644,6 @@ def ask(question: str, chat_history: list = None) -> dict:
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT.replace("{context}", context_str)}
     ]
-    # Include recent conversation so LLM maintains thread continuity
     for msg in lc_history:
         if isinstance(msg, HumanMessage):
             messages.append({"role": "user",      "content": msg.content})
@@ -549,20 +652,20 @@ def ask(question: str, chat_history: list = None) -> dict:
     messages.append({"role": "user", "content": question})
 
     # ── LLM call ─────────────────────────────
-    raw = ""
+    raw    = ""
+    parsed = {}
     try:
         response = llm.invoke(messages)
         raw      = response.content.strip()
-        # Strip markdown fences if GPT wraps output in ```json ... ```
-        raw = re.sub(r"^```(?:json)?\s*\n?", "", raw, flags=re.MULTILINE)
-        raw = re.sub(r"\n?```\s*$",           "", raw, flags=re.MULTILINE)
-        raw = raw.strip()
-        parsed = json.loads(raw)
-    except json.JSONDecodeError:
-        print(f"[DEBUG] JSON parse failed. Raw output:\n{raw}")
-        # Fallback: use raw text as answer, detect category with keywords
+        parsed   = _parse_llm_json(raw)
+    except ValueError as e:
+        # JSON extraction failed — raw text is not valid JSON.
+        # Use raw as answer ONLY if it looks like human-readable text (not JSON).
+        raw_str = str(e)
+        fallback_text = raw if raw and not raw.lstrip().startswith(("{", "[", "`")) else ""
+        print(f"[DEBUG] JSON parse failed. Raw output:\n{raw[:300]}")
         parsed = {
-            "answer":     raw if raw else "An error occurred. Please try again.",
+            "answer":     fallback_text or "An error occurred processing the response. Please try again.",
             "category":   detect_category(question),
             "cited_urls": [],
             "follow_ups": [],
@@ -582,9 +685,15 @@ def ask(question: str, chat_history: list = None) -> dict:
     cited_urls = set(parsed.get("cited_urls", []))
     follow_ups = [f.strip() for f in parsed.get("follow_ups", []) if f.strip()][:2]
 
+    # Sanitize: if answer is still JSON-like (parse failed gracefully but returned JSON),
+    # replace it with a generic error rather than exposing raw JSON in the chat.
+    if answer.lstrip().startswith(("{", "[")) and len(answer) > 50:
+        print(f"[DEBUG] Answer looks like raw JSON — replacing with error message")
+        answer = "Something went wrong processing this response. Please try again."
+        category = "general"
+
     # ── Filter sources to cited-only ──────────
     sources = [s for s in all_sources if s["url"] in cited_urls]
-    # Safety fallback: if LLM cited nothing, show top 2
     if not sources and all_sources:
         sources = all_sources[:2]
 
@@ -594,20 +703,15 @@ def ask(question: str, chat_history: list = None) -> dict:
         {"role": "ai",    "content": answer},
     ]
 
-    # ── Terminal feedback capture ─────────────
-    # ── Debug output ──────────────────────────
-    
-    feedback = ""
     print(f"\n{'─'*60}")
     print(f"[ANSWER]   {answer[:200]}{'...' if len(answer) > 200 else ''}")
     print(f"[CATEGORY] {category}  |  [LOW_CONF] {low_conf}")
     print(f"[SOURCES]  {[s['url'] for s in sources]}")
     print(f"{'─'*60}\n")
 
-    # ── Log ───────────────────────────────────
     log_entry(
         question, standalone, answer, sources,
-        category, low_conf, session_facts, follow_ups, feedback,
+        category, low_conf, session_facts, follow_ups, "",
     )
 
     return {
