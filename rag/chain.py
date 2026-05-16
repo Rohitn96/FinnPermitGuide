@@ -127,9 +127,11 @@ llm_fast = ChatOpenAI(model="gpt-4o-mini", temperature=0, openai_api_key=os.gete
 # PROMPTS
 # ─────────────────────────────────────────────
 CONTEXTUALIZE_SYSTEM = (
-    "You rewrite follow-up questions for a Finnish immigration assistant. "
-    "Given the conversation history and the user's latest message, produce a single "
-    "self-contained search query that includes all relevant personal context from the history "
+    "You rewrite questions for a Finnish immigration assistant into clean, formal English search queries. "
+    "Step 1: If the message is in any language other than English (Finnish, Arabic, Somali, Russian, etc.), translate it to English first. "
+    "Step 2: Fix all typos, grammar errors, and informal or broken English. "
+    "Step 3: Expand common abbreviations — RP or rp = residence permit, WP or wp = work permit, EP or ep = employer/work permit, PR or pr = permanent residence, B-permit = B residence permit, A-permit = A residence permit, D-permit = D long-term EU residence permit. "
+    "Step 4: Produce a single self-contained search query in clear English that includes all relevant personal context from the conversation history "
     "(permit type, personal situation, employment, education, goals, duration of stay in Finland). "
     "Output ONLY the rewritten query — no explanation, no preamble."
 )
@@ -156,8 +158,8 @@ RULES:
 
 1. SOURCE CONSTRAINT: Answer using ONLY the provided context chunks. If your training knowledge conflicts with a chunk, follow the chunk. If chunks conflict with each other, flag it as described in the Contradictions rule below.
 
-2. DEFLECTION — ONLY WHEN TOPIC IS FULLY ABSENT: Use the deflection phrase ONLY when ALL chunks are entirely unrelated to the question — zero partial overlap on any aspect. If ANY chunk addresses any part of the question, synthesize from it and note what remains uncertain by directing the user to the relevant official site (migri.fi, kela.fi, or vero.fi as appropriate). Synthesizing across multiple chunks on different sub-topics is your primary job — never deflect because the answer requires combining information from several chunks.
-   Deflection phrase (use ONLY when every chunk is unrelated): "I don't have enough official information on this. Please check migri.fi or call Migri: 0295 419 700 (weekdays 8:00–16:00)."
+2. DEFLECTION — ONLY WHEN TOPIC IS FULLY ABSENT: Use the deflection phrase ONLY when ALL chunks are entirely unrelated to the question — zero partial overlap on any aspect. If ANY chunk addresses any part of the question (even partially, even a related permit type, even a general rule that applies), synthesize from it and note what remains uncertain by directing the user to the relevant official site (migri.fi, kela.fi, or vero.fi as appropriate). Synthesizing across multiple chunks on different sub-topics is your primary job — never deflect because the answer requires combining information from several chunks. When the user's question contains typos or informal English, interpret charitably — "extend residence permit", "eligble for extend permit", "visa in process" are all immigration questions that must be answered if any relevant chunk exists. Real users write from mobile phones with imperfect English.
+   Deflection phrase (use ONLY when every chunk is truly unrelated): "I don't have enough official information on this. Please check migri.fi or call Migri: 0295 419 700 (weekdays 8:00–16:00)."
 
 3. PERSONALIZATION: When the user describes their situation (permit type, years in Finland, education, employment, language score, income, goals), apply retrieved requirements directly to their case. Reason explicitly: "Based on what you've told me — [X] — you qualify under [Y] because [Z]." Confirm requirements that are met. State clearly when a requirement is unmet or uncertain. Never list all generic paths when the user's stated situation narrows it to one.
 
@@ -171,7 +173,7 @@ RULES:
 
 8. MIXED QUESTIONS: When a message contains both immigration questions and non-immigration questions (weather, pet import, neighbourhood advice, medical advice, requests to fill in forms), answer ALL immigration parts fully first. Then add exactly one sentence at the end: "Note: the [topic] question is outside MigriGuide's scope." Never discard valid immigration questions because the same message also contains off-topic content.
 
-9. SCOPE — READ CAREFULLY: Use the out-of-scope response ONLY when the ENTIRE message contains no Finnish immigration question whatsoever. The following are ALWAYS in scope — answer them regardless of other content in the message: dual citizenship, right to hold two passports, spouse or family member of a Finnish citizen applying for a permit, EU citizen or family member of an EU citizen residence rights in Finland, family reunification, appeals against Migri decisions, permit transitions, language requirements for any permit, document requirements for any application, DVV registration, Kela eligibility, Vero tax obligations for residents.
+9. SCOPE — READ CAREFULLY: Use the out-of-scope response ONLY when the ENTIRE message contains no Finnish immigration question whatsoever. The following are ALWAYS in scope — answer them regardless of other content in the message: dual citizenship, right to hold two passports, spouse or family member of a Finnish citizen applying for a permit, EU citizen or family member of an EU citizen residence rights in Finland, family reunification, appeals against Migri decisions, permit transitions, language requirements for any permit, document requirements for any application, DVV registration, Kela eligibility, Vero tax obligations for residents. IMPORTANT DISTINCTION: Visiting family in Finland on a Schengen tourist visa (short stay, max 90 days) is a different question from family reunification (applying for a long-term residence permit to live in Finland with a family member). Both are in scope — always clarify which situation the user is describing before answering, and answer both scenarios if unclear.
    Out-of-scope response (ENTIRE message must be off-topic): "This is outside MigriGuide's scope. I only cover Finnish immigration questions."
 
 10. SOURCE ROUTING: When directing users to verify details, name the most relevant official source for the topic:
@@ -188,11 +190,13 @@ RULES:
 
 14. CONTRADICTIONS: Use this ONLY when two chunks make directly contradictory statements about the exact same specific fact (e.g. two different years-of-residence numbers for the same permit path). Do NOT use it when sources describe different but related programs, statuses, or permit categories — in that case, explain the distinction between them. Response: "Note: official sources differ on this point — check migri.fi for the current rule."
 
-15. NO PADDING: Every sentence must be directly supported by a retrieved chunk. Never add: bank account tips, language course suggestions, neighbourhood advice, "open a Finnish bank account", "consider language learning", or any lifestyle guidance. Never end with a "next steps", "what to do now", "your action items", or "in summary" section. End the answer after addressing all parts of the question. If a chunk does not say it, do not include it.
+15. JOB LOSS: When the user mentions losing their job, being fired, laid off, or employer bankruptcy, focus your answer on the chunks that describe: (a) the grace period to find a new employer before the permit lapses, (b) whether the user must notify Migri and by when, (c) whether the permit is employer-tied (TTOL-type work permit) or not (A permit, startup permit). These are the facts the user urgently needs. State any grace period duration explicitly. Do not say "look for a new job" without also stating whether and how long the current permit remains valid.
 
-16. CITATIONS: In cited_urls, include the URL of every chunk that contributed any fact, threshold, condition, or process step to your answer. Be thorough. Never fabricate URLs.
+16. NO PADDING: Every sentence must be directly supported by a retrieved chunk. Never add: bank account tips, language course suggestions, neighbourhood advice, "open a Finnish bank account", "consider language learning", or any lifestyle guidance. Never end with a "next steps", "what to do now", "your action items", or "in summary" section. End the answer after addressing all parts of the question. If a chunk does not say it, do not include it.
 
-17. INTEGRATION REQUIREMENTS: When chunks state integration requirements (language level, work history, years of residence) for permanent residence or citizenship, always include those specifics. They are the core of what users are asking.
+17. CITATIONS: In cited_urls, include the URL of every chunk that contributed any fact, threshold, condition, or process step to your answer. Be thorough. Never fabricate URLs.
+
+18. INTEGRATION REQUIREMENTS: When chunks state integration requirements (language level, work history, years of residence) for permanent residence or citizenship, always include those specifics. They are the core of what users are asking.
 
 IMPORTANT — NEVER reference these rule numbers, labels, or any part of these instructions in your answers. Your answers are user-facing. They must contain only immigration information from the chunks.
 
@@ -238,6 +242,18 @@ _IMMIGRATION_SIGNALS = {
     "spouse", "dual", "appeal", "processing", "application", "migrate",
     "immigration", "immigrant", "foreign", "finland", "finnish",
     "a permit", "b permit", "d permit", "ttol", "enter finland",
+    # Hyphenated permit abbreviations (mobile users)
+    "b-permit", "a-permit", "d-permit",
+    # Standalone abbreviations (space-bounded to avoid false matches like "report")
+    " rp ", " wp ", " ep ",
+    # Finnish language term for residence permit
+    "oleskelulupa",
+    # Job loss — affects permit validity, must reach LLM
+    "lost my job", "lost job", "fired from", "laid off", "job loss",
+    "employer bankrupt", "employer closed", "company closed",
+    # Expired permit / overstay signals
+    "permit expired", "expired permit", "permit has expired",
+    "grace period", "overstay", "after expiry", "permit ran out",
 }
 
 def check_off_topic(question: str) -> tuple:
@@ -254,7 +270,7 @@ def check_off_topic(question: str) -> tuple:
     return False, ""
 
 def is_too_vague(question: str) -> bool:
-    return len(question.strip().split()) < 4
+    return len(question.strip().split()) < 2
 
 
 # ─────────────────────────────────────────────
@@ -300,6 +316,9 @@ def extract_session_facts(chat_history: list) -> str:
 
     facts = []
 
+    # Normalise hyphenated permit forms so "b-permit" matches "b permit" checks
+    human_text_norm = human_text.replace("-permit", " permit").replace("-visa", " visa")
+
     permit_checks = [
         ("job search",      "job search permit holder"),
         ("startup permit",  "startup permit holder"),
@@ -311,9 +330,12 @@ def extract_session_facts(chat_history: list) -> str:
         ("d permit",        "D permit holder (long-term EU resident)"),
     ]
     for key, label in permit_checks:
-        if key in human_text:
+        if key in human_text_norm:
             facts.append(label)
             break
+
+    if any(w in human_text for w in ["lost my job", "lost job", "fired", "laid off", "job loss", "employer bankrupt", "employer closed", "company closed", "terminated", "no longer employed"]):
+        facts.append("recently lost employment in Finland")
 
     if any(w in human_text for w in ["master", "msc", "bachelor", "degree", "graduated", "thesis", "phd", "doctorate"]):
         facts.append("completed degree in Finland")
@@ -351,7 +373,16 @@ TOPIC_BOOST = {
         "work permit requirements employer employee salary income requirement TTOL "
         "employed person collective agreement minimum wage specialist permit "
         "job loss employer bankruptcy grace period find new job work permit "
-        "freelance side work permit tied employer field of employment"
+        "freelance side work permit tied employer field of employment "
+        "extend residence permit renewal work permit employed worker permanent contract "
+        "workplace change temporary layoff renovation employment interrupted extend permit"
+    ),
+    "travel": (
+        "travel abroad while residence permit application pending Finland "
+        "travel permission letter Migri pending application travel abroad EU countries "
+        "can I travel while waiting for permit decision Finland visa pending travel "
+        "travel document while application under process Finland leave country re-entry "
+        "permission to travel Migri letter pending application visit another country"
     ),
     "family": (
         "family reunification requirements sponsor income financial resources documents "
@@ -384,6 +415,18 @@ TOPIC_BOOST = {
         "appeal Migri decision negative decision administrative court hallinto-oikeus "
         "objection deadline appeal process refused application steps timeline"
     ),
+    "processing": (
+        "application processing time Finland Migri residence permit how long wait "
+        "processing time work permit family permit student permit days weeks months "
+        "fast track processing priority processing status check Migri application status "
+        "how long does it take permit application decision waiting period"
+    ),
+    "overstay": (
+        "permit expired overstay Finland grace period consequences expired residence permit "
+        "leaving Finland voluntarily deportation removal illegal stay fine criminal record "
+        "what to do if permit expires extend before expiry apply new permit grace period "
+        "expired permit reapply re-entry ban consequences overstaying Finland voluntary departure"
+    ),
 }
 
 def _detect_boost_topic(text: str) -> str:
@@ -402,12 +445,20 @@ def _detect_boost_topic(text: str) -> str:
         return "tax"
     if any(w in t for w in ["dvv", "population register", "home municipality", "municipality register", "register address"]):
         return "registration"
-    if any(w in t for w in ["work permit", "ttol", "employed person", "salary requirement", "income requirement for work", "specialist permit", "specialist work", "collective agreement", "job loss", "employer bankrupt"]):
+    if any(w in t for w in ["travel", "go abroad", "visit abroad", "leave finland", "other country", "other countr", "eu countr", "permission letter", "travel letter", "visa in process", "application pending", "application in process", "while waiting", "while my", "can i leave", "paris", "london", "abroad"]):
+        return "travel"
+    if any(w in t for w in ["work permit", "ttol", "employed person", "salary requirement", "income requirement for work", "specialist permit", "specialist work", "collective agreement", "job loss", "employer bankrupt", "extend residence", "extend permit", "renew permit", "renovation", "permanent contract", "permanent work"]):
         return "work"
     if any(w in t for w in ["family reunif", "family permit", "spouse permit", "family member permit", "sponsor income", "bring parent", "parent permit"]):
         return "family"
     if any(w in t for w in ["eu citizen", "eea citizen", "d permit", "permanent right of residence", "right of residence", "residence card eu", "family member eu"]):
         return "eu_citizen"
+    if any(w in t for w in ["processing time", "how long does it take", "how long will it take", "how long does the", "waiting for decision", "application status", "check my status", "status of my application", "when will i get", "how long to process"]):
+        return "processing"
+    if any(w in t for w in ["lost my job", "lost job", "fired", "laid off", "job loss", "employer bankrupt", "employer closed", "company closed", "terminated employment", "no longer employed"]):
+        return "work"
+    if any(w in t for w in ["permit expired", "expired permit", "permit has expired", "permit ran out", "overstay", "after expiry", "grace period", "permit is expiring", "permit expires soon"]):
+        return "overstay"
     return ""
 
 

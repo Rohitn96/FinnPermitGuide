@@ -80,6 +80,11 @@ def health():
         "version": "1.0.0",
     }
 
+@app.head("/")
+def health_head():
+    """HEAD health check for UptimeRobot monitors."""
+    return {}
+
 @app.post("/ask", response_model=AskResponse)
 def ask_question(request: AskRequest):
     """
