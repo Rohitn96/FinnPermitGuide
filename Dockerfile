@@ -13,9 +13,9 @@ COPY api/ ./api/
 # Ensure logs directory exists
 RUN mkdir -p logs
 
-ENV PORT=8000
+ENV PORT=8080
 ENV USE_PINECONE=true
 
-EXPOSE 8000
+EXPOSE 8080
 
-CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
+CMD ["sh", "-c", "uvicorn api.main:app --host 0.0.0.0 --port ${PORT} --workers 1"]

@@ -35,7 +35,10 @@ LOG_DIR.mkdir(exist_ok=True)
 # ─────────────────────────────────────────────
 # MODELS & VECTORSTORE
 # ─────────────────────────────────────────────
-embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
+embeddings = OpenAIEmbeddings(
+    model="text-embedding-3-small",
+    openai_api_key=os.getenv("OPENAI_API_KEY"),
+)
 
 _use_pinecone = os.getenv("USE_PINECONE", "false").lower() == "true"
 
@@ -117,8 +120,8 @@ else:
 # gpt-4o-mini is used for all inference (synthesis of retrieved text, query rewriting).
 # 95% of gpt-4o quality at 10% of the cost for retrieval-augmented tasks.
 # Swap llm back to gpt-4o below only if answer quality measurably degrades.
-llm      = ChatOpenAI(model="gpt-4o-mini", temperature=0)
-llm_fast = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+llm      = ChatOpenAI(model="gpt-4o-mini", temperature=0, openai_api_key=os.getenv("OPENAI_API_KEY"))
+llm_fast = ChatOpenAI(model="gpt-4o-mini", temperature=0, openai_api_key=os.getenv("OPENAI_API_KEY"))
 
 # ─────────────────────────────────────────────
 # PROMPTS

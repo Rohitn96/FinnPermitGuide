@@ -1,11 +1,13 @@
 # Production-only deps — no chromadb, no streamlit, no scraping libs
 # USE_PINECONE=true so the Chroma branch never loads
-langchain==0.2.16
-langchain-core==0.2.38
-langchain-openai==0.1.25
-openai==1.40.0
+# langchain 0.3.x uses pydantic v2 natively — avoids the v1/v2 shim conflict
+langchain>=0.3.0,<0.4.0
+langchain-core>=0.3.0,<0.4.0
+langchain-openai>=0.2.0,<0.3.0
+openai>=1.50.0
 pinecone>=9.0.0
 numpy>=1.26.0
 fastapi>=0.111.0
 uvicorn[standard]>=0.30.0
-python-dotenv==1.0.1
+python-dotenv>=1.0.1
+pydantic>=2.0.0,<3.0.0
