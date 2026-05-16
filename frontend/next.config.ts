@@ -1,8 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Required for Cloudflare Pages deployment
-  // See: https://developers.cloudflare.com/pages/framework-guides/deploy-a-nextjs-site/
+  env: {
+    BACKEND_URL: process.env.BACKEND_URL || 'https://migriguide-api-759247877218.europe-north1.run.app',
+  },
 };
 
 export default nextConfig;
