@@ -158,8 +158,17 @@ RULES:
 
 1. SOURCE CONSTRAINT: Answer using ONLY the provided context chunks. If your training knowledge conflicts with a chunk, follow the chunk. If chunks conflict with each other, flag it as described in the Contradictions rule below.
 
-2. DEFLECTION — ONLY WHEN TOPIC IS FULLY ABSENT: Use the deflection phrase ONLY when ALL chunks are entirely unrelated to the question — zero partial overlap on any aspect. If ANY chunk addresses any part of the question (even partially, even a related permit type, even a general rule that applies), synthesize from it and note what remains uncertain by directing the user to the relevant official site (migri.fi, kela.fi, or vero.fi as appropriate). Synthesizing across multiple chunks on different sub-topics is your primary job — never deflect because the answer requires combining information from several chunks. When the user's question contains typos or informal English, interpret charitably — "extend residence permit", "eligble for extend permit", "visa in process" are all immigration questions that must be answered if any relevant chunk exists. Real users write from mobile phones with imperfect English.
-   Deflection phrase (use ONLY when every chunk is truly unrelated): "I don't have enough official information on this. Please check migri.fi or call Migri: 0295 419 700 (weekdays 8:00–16:00)."
+2. DEFLECTION — STRICT CONDITIONS ONLY: Use the deflection phrase only when EVERY SINGLE retrieved chunk is entirely unrelated to any Finnish immigration topic — no permit type, no benefit, no tax or registration step, no process mentioned. This bar is very high and rarely met.
+
+   If ANY chunk addresses any part of the question (even partially, even for a related permit type, even a general rule that could apply), synthesize from it, state what remains uncertain, and point to the relevant official source. Synthesising across several chunks on different sub-topics is your primary job.
+
+   BROAD OVERVIEW QUESTIONS ("what permits exist in Finland", "what visa do I need", "what are the requirements"): List every permit type, requirement, or process found across ALL retrieved chunks even if no single chunk covers the full picture. A partial answer with a pointer to migri.fi is always better than deflecting.
+
+   FINANCIAL AND DOCUMENT QUESTIONS: Income requirements, salary thresholds, financial sufficiency, required documents, fees, and processing costs for any permit or benefit are always within scope. Answer from the chunks even if only partially covered.
+
+   INFORMAL ENGLISH AND TYPOS: Real users write from mobile phones. Interpret charitably — "recidence" = residence, "salry requiremnets" = salary requirements, "cityzenship" = citizenship, "how long visa" = how long does the permit last, "visa for living" = residence permit. Answer if any related chunk exists.
+
+   Deflection phrase (use ONLY when every single chunk is truly unrelated to immigration): "I don't have enough official information on this. Please check migri.fi or call Migri: 0295 419 700 (weekdays 8:00–16:00)."
 
 3. PERSONALIZATION: When the user describes their situation (permit type, years in Finland, education, employment, language score, income, goals), apply retrieved requirements directly to their case. Reason explicitly: "Based on what you've told me — [X] — you qualify under [Y] because [Z]." Confirm requirements that are met. State clearly when a requirement is unmet or uncertain. Never list all generic paths when the user's stated situation narrows it to one.
 
@@ -687,27 +696,36 @@ def ask(question: str, chat_history: list = None) -> dict:
             "and what you are trying to do — the more accurate my answer will be."
         )
 
-    # ── Pre-filter: off topic ────────────────
-    off_topic, _ = check_off_topic(question)
-    if off_topic:
-        return _early_return(OUT_OF_SCOPE_REPLY)
+    # ── Pre-filter: off topic (first turn only) ──────────────────────────────
+    # Skip entirely when the conversation is already in progress. Mid-conversation
+    # questions are always immigration-contextual — blocking "how much salary do I
+    # need per month?" after three turns about permits causes false rejections.
+    # api/main.py has the same guard; this is a belt-and-suspenders defence.
+    if not chat_history:
+        off_topic, _ = check_off_topic(question)
+        if off_topic:
+            return _early_return(OUT_OF_SCOPE_REPLY)
 
     # ── Contextualize: rewrite follow-ups to standalone queries ──
     standalone = question
     recent     = chat_history[-(MAX_HISTORY_TURNS * 2):]
     lc_history = _to_lc_history(recent)
 
-    if lc_history:
-        try:
-            ctx_chain  = CONTEXTUALIZE_PROMPT | llm_fast
-            standalone = ctx_chain.invoke({
-                "chat_history": lc_history,
-                "question":     question,
-            }).content.strip()
-            print(f"[DEBUG] Standalone query: {standalone!r}")
-        except Exception as e:
-            print(f"[DEBUG] Contextualize error: {e}")
-            standalone = question
+    # Always contextualise — even on first turn with no history.
+    # Without history the LLM still fixes typos ("recidence"→"residence"),
+    # expands abbreviations (rp/wp/ep/pr), and normalises broken English
+    # before the query reaches the vectorstore. Skipping this step on first
+    # turn was the primary cause of poor retrieval on mobile-typed queries.
+    try:
+        ctx_chain  = CONTEXTUALIZE_PROMPT | llm_fast
+        standalone = ctx_chain.invoke({
+            "chat_history": lc_history,   # empty list on first turn — LangChain handles it
+            "question":     question,
+        }).content.strip()
+        print(f"[DEBUG] Standalone query: {standalone!r}")
+    except Exception as e:
+        print(f"[DEBUG] Contextualize error: {e}")
+        standalone = question
 
     # ── Session context enrichment ───────────
     session_facts  = extract_session_facts(chat_history)

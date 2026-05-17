@@ -107,17 +107,22 @@ def ask_question(request: AskRequest):
             follow_ups=[],
         )
 
-    # check_off_topic returns (bool, keyword) — unpack correctly
-    off_topic, _ = check_off_topic(request.question)
-    if off_topic:
-        return AskResponse(
-            answer=OUT_OF_SCOPE_REPLY,
-            sources=[],
-            category=None,
-            low_confidence=False,
-            chat_history=request.chat_history,
-            follow_ups=[],
-        )
+    # Off-topic check only applies to cold (first-turn) messages.
+    # Mid-conversation questions inherit immigration context — blocking them
+    # causes false rejections on valid follow-ups ("salary requirements per month"
+    # is clearly about a permit when it follows three turns about PR requirements).
+    # The LLM handles any genuinely off-topic parts via Rule 8 of the system prompt.
+    if len(request.chat_history) == 0:
+        off_topic, _ = check_off_topic(request.question)
+        if off_topic:
+            return AskResponse(
+                answer=OUT_OF_SCOPE_REPLY,
+                sources=[],
+                category=None,
+                low_confidence=False,
+                chat_history=request.chat_history,
+                follow_ups=[],
+            )
 
     # ── Run the RAG chain ─────────────────────────────────────────────────
     try:
