@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useEffect, useState, useCallback } from 'react';
+import Link from 'next/link';
 import { useChat } from '@/hooks/useChat';
 import ChatBubble from '@/components/ChatBubble';
 
@@ -10,6 +11,35 @@ const STARTER_QUESTIONS = [
   'How do I apply for Finnish citizenship?',
 ];
 
+const CATEGORY_STARTERS: Record<string, string> = {
+  'Residence Permits': 'What types of residence permits are available in Finland?',
+  'Citizenship': 'What are the requirements to apply for Finnish citizenship?',
+  'Kela Benefits': 'What Kela benefits can I get while on a residence permit?',
+  'Work Permit': 'How do I get a work-based residence permit in Finland?',
+  'Family Reunification': 'How do I apply to bring my family to Finland?',
+  'Study': 'Can I work in Finland while studying on a student permit?',
+  'Permanent Residence': 'When and how can I apply for permanent residence in Finland?',
+  'DVV Registration': 'How do I register my address and identity with DVV?',
+};
+
+function FinnishFlag({ className = '' }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      width="24"
+      height="15"
+      viewBox="0 0 24 15"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      <rect width="24" height="15" rx="2" fill="white" />
+      <rect y="6" width="24" height="3" fill="#003399" />
+      <rect x="7" y="0" width="3" height="15" fill="#003399" />
+    </svg>
+  );
+}
+
 export default function Home() {
   const { messages, isLoading, sendMessage, submitFeedback, clearConversation } = useChat();
   const [input, setInput] = useState('');
@@ -17,12 +47,10 @@ export default function Home() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Scroll to bottom on new messages
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading]);
 
-  // Auto-resize textarea as user types
   useEffect(() => {
     const ta = textareaRef.current;
     if (!ta) return;
@@ -36,7 +64,6 @@ export default function Home() {
       const q = input.trim();
       if (!q || isLoading) return;
       setInput('');
-      // Reset textarea height after clearing
       if (textareaRef.current) textareaRef.current.style.height = 'auto';
       sendMessage(q);
     },
@@ -61,13 +88,12 @@ export default function Home() {
 
       {/* ── Header ─────────────────────────────────────────── */}
       <header className="bg-[#003399] text-white px-4 py-3 flex items-center gap-3 shrink-0 shadow-md z-10">
-        {/* Logo — click to return to home / clear conversation */}
         <button
           onClick={handleClear}
           aria-label="Home — clear conversation"
           className="w-10 h-10 bg-white rounded-full flex items-center justify-center shrink-0 hover:bg-blue-100 transition-colors"
         >
-          <span className="text-[#003399] font-black text-sm select-none tracking-tight">MG</span>
+          <FinnishFlag />
         </button>
 
         <div className="min-w-0">
@@ -75,12 +101,16 @@ export default function Home() {
           <p className="text-blue-200 text-xs font-medium">AI Assistant for Finnish Immigration</p>
         </div>
 
-        <div className="ml-auto flex items-center gap-2 shrink-0">
+        <div className="ml-auto flex items-center gap-3 shrink-0">
+          <Link
+            href="/about"
+            className="text-blue-200 hover:text-white text-xs font-medium transition-colors"
+          >
+            About
+          </Link>
           <span className="bg-white text-[#003399] text-sm font-black px-3 py-1 rounded-full select-none tracking-tight shadow-sm">
             Unofficial · Beta
           </span>
-
-          {/* Clear conversation button */}
           {messages.length > 0 && (
             <button
               onClick={handleClear}
@@ -110,8 +140,7 @@ export default function Home() {
             All answers are sourced from official Finnish sources only. Always verify important information at{' '}
             <a href="https://migri.fi" target="_blank" rel="noopener noreferrer"
               className="underline font-bold">migri.fi</a>{' '}
-            or consult a licensed professional.{' '}
-            <span className="text-amber-700">Data last uploaded on 14/05/2026.</span>
+            or consult a licensed professional.
           </p>
           <button
             onClick={() => setBannerVisible(false)}
@@ -128,18 +157,42 @@ export default function Home() {
       {/* ── Chat area ──────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto">
         {messages.length === 0 ? (
-          /* Empty state — centered within max-w-3xl */
           <div className="max-w-3xl mx-auto px-4 h-full flex flex-col items-center justify-center text-center gap-5 pb-8">
-            <div className="w-16 h-16 bg-[#003399] rounded-full flex items-center justify-center shadow-lg">
-              <span className="text-white text-2xl font-bold select-none">MG</span>
+            {/* Large Finnish flag logo */}
+            <div className="w-16 h-16 bg-white border-2 border-[#003399] rounded-full flex items-center justify-center shadow-lg">
+              <svg width="36" height="23" viewBox="0 0 36 23" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <rect width="36" height="23" fill="white" />
+                <rect y="9" width="36" height="5" fill="#003399" />
+                <rect x="11" y="0" width="5" height="23" fill="#003399" />
+              </svg>
             </div>
+
             <div>
               <p className="font-semibold text-gray-800 text-lg">Ask about Finnish immigration</p>
               <p className="text-sm mt-1 text-gray-500 max-w-sm">
                 Permits, Kela benefits, residency, citizenship — answered from official Finnish sources only.
               </p>
             </div>
-            <div className="flex flex-wrap gap-2 justify-center mt-1 max-w-lg">
+
+            {/* Category chips */}
+            <div className="flex flex-wrap gap-2 justify-center max-w-lg">
+              {Object.entries(CATEGORY_STARTERS).map(([label, question]) => (
+                <button
+                  key={label}
+                  onClick={() => {
+                    setInput(question);
+                    textareaRef.current?.focus();
+                  }}
+                  disabled={isLoading}
+                  className="text-xs bg-blue-50 text-[#003399] border border-blue-200 rounded-full px-3 py-1.5 hover:bg-[#003399] hover:text-white transition-colors disabled:opacity-50"
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {/* Starter example questions */}
+            <div className="flex flex-wrap gap-2 justify-center max-w-lg">
               {STARTER_QUESTIONS.map(q => (
                 <button
                   key={q}
@@ -151,9 +204,13 @@ export default function Home() {
                 </button>
               ))}
             </div>
+
+            {/* Language support signal */}
+            <p className="text-xs text-gray-400">
+              🌐 Ask in any language — Finnish, Arabic, Somali, русский, हिंदी, or any other
+            </p>
           </div>
         ) : (
-          /* Messages — same max-w-3xl container as input bar */
           <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
             {messages.map((msg, i) => (
               <ChatBubble
@@ -225,6 +282,46 @@ export default function Home() {
             </p>
           </div>
         </div>
+      </div>
+
+      {/* ── Attribution footer ─────────────────────────────── */}
+      <footer className="shrink-0 bg-white pb-2 pt-1 text-center border-t border-gray-100">
+        <p className="text-[10px] text-gray-400 leading-relaxed">
+          Built by{' '}
+          <a
+            href="https://linkedin.com/in/rohitn96"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-gray-600 transition-colors"
+          >
+            Rohit Nair
+          </a>
+          {' · '}
+          <a
+            href="https://github.com/Rohitn96"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-gray-600 transition-colors inline-flex items-center gap-0.5"
+          >
+            <svg className="w-2.5 h-2.5 inline" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z" />
+            </svg>
+            {' '}GitHub
+          </a>
+          {' · '}
+          <Link href="/about" className="underline hover:text-gray-600 transition-colors">
+            About
+          </Link>
+          {' · '}
+          Not affiliated with Migri
+        </p>
+      </footer>
+
+      {/* ── Data freshness badge (fixed) ────────────────────── */}
+      <div className="fixed bottom-36 right-3 z-20 pointer-events-none">
+        <span className="text-[10px] text-gray-500 bg-white/90 border border-gray-200 rounded-full px-2.5 py-1 shadow-sm">
+          📅 Data: May 2026
+        </span>
       </div>
 
     </div>
