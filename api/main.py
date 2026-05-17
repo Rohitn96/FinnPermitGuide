@@ -57,6 +57,7 @@ class AskResponse(BaseModel):
     low_confidence:  bool
     chat_history:    list[Message]   # updated history — send this back next turn
     follow_ups:      list[str] = []  # suggested follow-up questions from chain.py
+    response_type:   str | None = None  # full_answer | partial_answer | clarification_needed | ambiguous | complex_case | no_data | out_of_scope
 
 # ── History Serialisation ─────────────────────────────────────────────────
 # chain.py uses plain {role, content} dicts internally — NOT LangChain objects.
@@ -147,6 +148,7 @@ def ask_question(request: AskRequest):
         low_confidence=result["low_conf"],
         chat_history=serialise(result["chat_history"]),
         follow_ups=result.get("follow_ups", []),
+        response_type=result.get("response_type"),
     )
 
 

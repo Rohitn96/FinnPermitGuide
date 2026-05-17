@@ -19,6 +19,7 @@ export interface ChatMessage {
   lowConfidence?: boolean;
   followUps?: string[];
   feedback?: 'up' | 'down' | null;
+  responseType?: string | null;
 }
 
 export interface AskResponse {
@@ -28,4 +29,5 @@ export interface AskResponse {
   low_confidence: boolean;
   chat_history: HistoryMessage[];
   follow_ups: string[];
+  response_type?: string | null;
 }

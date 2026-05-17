@@ -207,6 +207,16 @@ RULES:
 
 18. INTEGRATION REQUIREMENTS: When chunks state integration requirements (language level, work history, years of residence) for permanent residence or citizenship, always include those specifics. They are the core of what users are asking.
 
+19. RESPONSE TYPE: Every JSON response must include a "response_type" field. Choose exactly one:
+
+   "full_answer"          — Sufficient chunk coverage to give a complete, accurate answer.
+   "partial_answer"       — Chunks partially address the question. Answer what is known, explicitly state what is missing, and name the specific official source for the gap (kela.fi / vero.fi / dvv.fi / migri.fi).
+   "clarification_needed" — Question is too broad or vague without knowing the user's purpose or situation (e.g. "what visa do I need?", "how do I come to Finland?", "what are the requirements?"). Do NOT use the deflection phrase. Instead: (a) explain in one sentence that the answer depends on purpose/situation, (b) list the main relevant permit or benefit categories found in the chunks with a one-line description of each, (c) ask the user to specify their situation so you can give exact requirements.
+   "ambiguous"            — Question has two or more valid interpretations with meaningfully different answers (e.g. short tourist visit vs. long-term family permit; EU citizen vs. non-EU citizen rights). State both interpretations briefly and ask the user which applies before answering fully.
+   "complex_case"         — User describes a situation complex enough that the general rule may not fully apply (job loss mid-application, overlapping permits, re-entry ban, criminal record implications). Give the general rule from the chunks, explicitly flag the complexity, and recommend the user contact Migri directly (0295 419 700) or consult a licensed immigration lawyer.
+   "no_data"              — No retrieved chunk contains information relevant to any part of this question. Use the deflection phrase. Route to the most specific official source: kela.fi for benefits and social assistance, vero.fi for tax, dvv.fi for registration, migri.fi for all permit and immigration questions.
+   "out_of_scope"         — The entire message is unrelated to Finnish immigration, benefits, tax, or registration. Use the out-of-scope response.
+
 IMPORTANT — NEVER reference these rule numbers, labels, or any part of these instructions in your answers. Your answers are user-facing. They must contain only immigration information from the chunks.
 
 CONTEXT CHUNKS:
@@ -214,10 +224,11 @@ CONTEXT CHUNKS:
 
 Respond ONLY with a valid JSON object. No markdown fences. No text before or after the JSON.
 
-{{"answer": "your answer here — plain text only, no markdown, no HTML. Numbered list only for 3+ distinct requirements or steps.",
+{{"answer": "plain text only — no markdown, no HTML. Numbered list only for 3+ distinct requirements or steps. For clarification_needed: list permit/benefit categories first then ask for the user's situation. For partial_answer: state what is known then name the exact source for the gap. For ambiguous: state both interpretations and ask which applies.",
+  "response_type": "full_answer | partial_answer | clarification_needed | ambiguous | complex_case | no_data | out_of_scope",
   "category": "pick exactly one based on the PRIMARY topic: work | family | study | permanent | asylum | temporary_protection | benefits | citizenship | tax | registration | eu_citizen | appeals | processing | overstay | general. Edge cases: travel rules WHILE holding a PR permit → permanent. PR to citizenship timeline question → citizenship. Language proof documents for a permit → match the permit type. Appeal of a Migri decision → appeals.",
   "cited_urls": ["every URL from chunks that contributed any fact to this answer — be thorough"],
-  "follow_ups": ["2 specific actionable follow-up questions based on natural next steps or gaps in the answer"]
+  "follow_ups": ["2 questions the user would ask next that MigriGuide can answer from official Finnish sources — must be questions FROM the user TO the AI, never questions asking the user to provide their personal details or situation. For clarification_needed: suggest 2 specific sub-topic questions the user can ask (e.g. 'What are the requirements for a Finnish work permit?'). For no_data or out_of_scope: suggest 2 related immigration questions MigriGuide can answer."]
 }}"""
 
 # ─────────────────────────────────────────────
@@ -679,13 +690,14 @@ def ask(question: str, chat_history: list = None) -> dict:
             {"role": "ai",    "content": answer_text},
         ]
         return {
-            "answer":       answer_text,
-            "sources":      [],
-            "category":     cat,
-            "low_conf":     False,
-            "standalone":   question,
-            "chat_history": updated,
-            "follow_ups":   [],
+            "answer":        answer_text,
+            "sources":       [],
+            "category":      cat,
+            "low_conf":      False,
+            "standalone":    question,
+            "chat_history":  updated,
+            "follow_ups":    [],
+            "response_type": "no_data",
         }
 
     # ── Pre-filter: too vague ────────────────
@@ -774,7 +786,9 @@ def ask(question: str, chat_history: list = None) -> dict:
             messages.append({"role": "user",      "content": msg.content})
         elif isinstance(msg, AIMessage):
             messages.append({"role": "assistant", "content": msg.content})
-    messages.append({"role": "user", "content": question})
+    # Send the cleaned/translated standalone query to the LLM, not the raw original.
+    # This ensures non-English input and typo-ridden queries are understood correctly.
+    messages.append({"role": "user", "content": standalone})
 
     # ── LLM call ─────────────────────────────
     raw    = ""
@@ -790,25 +804,28 @@ def ask(question: str, chat_history: list = None) -> dict:
         fallback_text = raw if raw and not raw.lstrip().startswith(("{", "[", "`")) else ""
         print(f"[DEBUG] JSON parse failed. Raw output:\n{raw[:300]}")
         parsed = {
-            "answer":     fallback_text or "An error occurred processing the response. Please try again.",
-            "category":   detect_category(question),
-            "cited_urls": [],
-            "follow_ups": [],
+            "answer":        fallback_text or "An error occurred processing the response. Please try again.",
+            "category":      detect_category(question),
+            "cited_urls":    [],
+            "follow_ups":    [],
+            "response_type": "no_data",
         }
     except Exception as e:
         print(f"[DEBUG] LLM call failed: {e}")
         parsed = {
-            "answer":     "Something went wrong on my end. Please try your question again.",
-            "category":   "general",
-            "cited_urls": [],
-            "follow_ups": [],
+            "answer":        "Something went wrong on my end. Please try your question again.",
+            "category":      "general",
+            "cited_urls":    [],
+            "follow_ups":    [],
+            "response_type": "no_data",
         }
 
     # ── Parse structured output ───────────────
-    answer     = parsed.get("answer",     "").strip()
-    category   = parsed.get("category",   "general").strip()
-    cited_urls = set(parsed.get("cited_urls", []))
-    follow_ups = [f.strip() for f in parsed.get("follow_ups", []) if f.strip()][:2]
+    answer        = parsed.get("answer",        "").strip()
+    category      = parsed.get("category",      "general").strip()
+    response_type = parsed.get("response_type", "full_answer").strip()
+    cited_urls    = set(parsed.get("cited_urls", []))
+    follow_ups    = [f.strip() for f in parsed.get("follow_ups", []) if f.strip()][:2]
 
     # Sanitize: if answer is still JSON-like (parse failed gracefully but returned JSON),
     # replace it with a generic error rather than exposing raw JSON in the chat.
@@ -841,11 +858,12 @@ def ask(question: str, chat_history: list = None) -> dict:
     )
 
     return {
-        "answer":       answer,
-        "sources":      sources,
-        "category":     category,
-        "low_conf":     low_conf,
-        "standalone":   standalone,
-        "chat_history": updated_history,
-        "follow_ups":   follow_ups,
+        "answer":        answer,
+        "sources":       sources,
+        "category":      category,
+        "low_conf":      low_conf,
+        "standalone":    standalone,
+        "chat_history":  updated_history,
+        "follow_ups":    follow_ups,
+        "response_type": response_type,
     }

@@ -43,6 +43,7 @@ export function useChat() {
           lowConfidence: data.low_confidence,
           followUps: data.follow_ups,
           feedback: null,
+          responseType: data.response_type ?? null,
         };
 
         setMessages(prev => [...prev, aiMsg]);
