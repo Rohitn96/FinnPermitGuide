@@ -7,21 +7,6 @@ export const metadata: Metadata = {
     'FinnPermit Guide — A free AI assistant for Finnish immigration questions. Not affiliated with the Finnish Immigration Service (Migri).',
 };
 
-function FinnishFlag() {
-  return (
-    <svg
-      className="w-full h-full"
-      viewBox="0 0 24 15"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-    >
-      <rect width="24" height="15" rx="1" fill="white" />
-      <rect y="6" width="24" height="3" fill="#003399" />
-      <rect x="7" y="0" width="3" height="15" fill="#003399" />
-    </svg>
-  );
-}
 
 export default function AboutPage() {
   return (
@@ -29,13 +14,6 @@ export default function AboutPage() {
 
       {/* ── Header ─────────────────────────────────────────── */}
       <header className="bg-[#003399] text-white px-4 py-3 flex items-center gap-3 shadow-md shrink-0">
-        <Link
-          href="/"
-          aria-label="Back to home"
-          className="h-9 w-[58px] bg-white rounded-md flex items-center justify-center shrink-0 hover:bg-blue-100 transition-colors overflow-hidden"
-        >
-          <FinnishFlag />
-        </Link>
         <div className="min-w-0">
           <p className="font-black text-lg leading-tight tracking-tight">FinnPermit Guide</p>
           <p className="text-blue-200 text-xs font-medium">About this tool</p>
