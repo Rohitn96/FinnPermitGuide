@@ -2,9 +2,9 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'MigriGuide — Finnish Immigration Assistant',
+  title: 'FinnPermit Guide — Finnish Immigration Assistant',
   description:
-    'AI-powered Finnish immigration assistant. All answers sourced exclusively from official Finnish government sources (Migri, Kela, DVV, Vero, InfoFinland).',
+    'FinnPermit Guide — A free AI assistant for Finnish immigration questions. Not affiliated with the Finnish Immigration Service (Migri).',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

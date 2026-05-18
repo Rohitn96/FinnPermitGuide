@@ -1,8 +1,8 @@
-# Cloudflare Pages configuration for MigriGuide frontend
+# Cloudflare Pages configuration for FinnPermit Guide frontend
 # BACKEND_URL is set as an environment variable in the Cloudflare Pages dashboard
 # (Settings → Environment variables → Production)
 
-name = "migriguide"
+name = "finnpermit"
 compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
 

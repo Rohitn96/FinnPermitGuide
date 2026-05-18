@@ -2,9 +2,9 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'About — MigriGuide',
+  title: 'About — FinnPermit Guide',
   description:
-    'Learn how MigriGuide works, what it is not, and who built it.',
+    'FinnPermit Guide — A free AI assistant for Finnish immigration questions. Not affiliated with the Finnish Immigration Service (Migri).',
 };
 
 function FinnishFlag() {
@@ -38,7 +38,7 @@ export default function AboutPage() {
           <FinnishFlag />
         </Link>
         <div className="min-w-0">
-          <p className="font-black text-lg leading-tight tracking-tight">MigriGuide</p>
+          <p className="font-black text-lg leading-tight tracking-tight">FinnPermit Guide</p>
           <p className="text-blue-200 text-xs font-medium">About this tool</p>
         </div>
         <div className="ml-auto shrink-0">
@@ -54,11 +54,11 @@ export default function AboutPage() {
       {/* ── Content ────────────────────────────────────────── */}
       <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-8 space-y-8">
 
-        {/* Section 1 — What is MigriGuide? */}
+        {/* Section 1 — What is FinnPermit Guide? */}
         <section>
-          <h2 className="text-base font-bold text-gray-800 mb-2">What is MigriGuide?</h2>
+          <h2 className="text-base font-bold text-gray-800 mb-2">What is FinnPermit Guide?</h2>
           <p className="text-sm text-gray-600 leading-relaxed">
-            MigriGuide is a free AI assistant that answers questions about Finnish immigration, Kela
+            FinnPermit Guide is a free AI assistant that answers questions about Finnish immigration, Kela
             benefits, DVV registration, and tax obligations. All answers are sourced exclusively from
             official Finnish government websites:{' '}
             <a href="https://migri.fi" target="_blank" rel="noopener noreferrer" className="text-[#003399] underline">migri.fi</a>,{' '}
@@ -73,7 +73,7 @@ export default function AboutPage() {
         <section>
           <h2 className="text-base font-bold text-gray-800 mb-2">How does it work?</h2>
           <p className="text-sm text-gray-600 leading-relaxed">
-            MigriGuide uses Retrieval-Augmented Generation (RAG). When you ask a question, it searches
+            FinnPermit Guide uses Retrieval-Augmented Generation (RAG). When you ask a question, it searches
             1,532 text chunks scraped from official Finnish government sources, finds the most relevant
             information, and generates a plain-English answer with citations. It does not guess — if it
             cannot find a sourced answer, it says so.
@@ -102,7 +102,7 @@ export default function AboutPage() {
         <section>
           <h2 className="text-base font-bold text-gray-800 mb-2">Privacy</h2>
           <p className="text-sm text-gray-600 leading-relaxed">
-            MigriGuide logs anonymised conversation sessions to improve answer quality. No personally
+            FinnPermit Guide logs anonymised conversation sessions to improve answer quality. No personally
             identifiable information is required to use this tool. Do not include your personal case
             numbers, passport numbers, or other sensitive identifiers in your questions.
           </p>
@@ -112,7 +112,7 @@ export default function AboutPage() {
         <section>
           <h2 className="text-base font-bold text-gray-800 mb-2">Built by</h2>
           <p className="text-sm text-gray-600 leading-relaxed">
-            MigriGuide was built independently by Rohit Nair, an AI and data professional based in
+            FinnPermit Guide was built independently by Rohit Nair, an AI and data professional based in
             Helsinki.
           </p>
           <div className="flex items-center gap-3 mt-3">
@@ -157,8 +157,7 @@ export default function AboutPage() {
 
         <div className="pt-4 border-t border-gray-200">
           <p className="text-xs text-gray-400 text-center">
-            MigriGuide is independent and not affiliated with or endorsed by Migri, Kela, DVV, or any
-            Finnish government body.
+            FinnPermit Guide is an independent tool, not affiliated with the Finnish Immigration Service (Migri), Kela, DVV, or any Finnish government body.
           </p>
         </div>
       </main>
@@ -169,7 +168,7 @@ export default function AboutPage() {
           href="/"
           className="text-xs text-[#003399] hover:underline transition-colors"
         >
-          ← Back to MigriGuide Chat
+          ← Back to FinnPermit Guide Chat
         </Link>
       </footer>
 

@@ -13,7 +13,7 @@ export default function FeedbackButtons({ messageId, feedback, onFeedback }: Pro
 
   async function handleShare() {
     try {
-      await navigator.clipboard.writeText('https://migri-assistant.pages.dev');
+      await navigator.clipboard.writeText('https://finnpermit.pages.dev');
     } catch {
       // clipboard API unavailable — no-op
     }
@@ -80,7 +80,7 @@ export default function FeedbackButtons({ messageId, feedback, onFeedback }: Pro
           onClick={handleShare}
           className="text-xs text-gray-400 hover:text-[#003399] transition-colors flex items-center gap-1"
         >
-          🔗 Share MigriGuide
+          🔗 Share FinnPermit Guide
         </button>
         {copied && (
           <span className="absolute -top-8 left-0 bg-gray-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap shadow-md">
