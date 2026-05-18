@@ -26,14 +26,12 @@ function FinnishFlag({ className = '' }: { className?: string }) {
   return (
     <svg
       className={className}
-      width="24"
-      height="15"
       viewBox="0 0 24 15"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"
     >
-      <rect width="24" height="15" rx="2" fill="white" />
+      <rect width="24" height="15" rx="1" fill="white" />
       <rect y="6" width="24" height="3" fill="#003399" />
       <rect x="7" y="0" width="3" height="15" fill="#003399" />
     </svg>
@@ -97,9 +95,9 @@ export default function Home() {
         <button
           onClick={handleClear}
           aria-label="Home — clear conversation"
-          className="w-10 h-10 bg-white rounded-full flex items-center justify-center shrink-0 hover:bg-blue-100 transition-colors"
+          className="h-9 w-[58px] bg-white rounded-md flex items-center justify-center shrink-0 hover:bg-blue-100 transition-colors overflow-hidden"
         >
-          <FinnishFlag />
+          <FinnishFlag className="w-full h-full" />
         </button>
 
         <div className="min-w-0">
@@ -164,8 +162,8 @@ export default function Home() {
         {messages.length === 0 ? (
           <div className="max-w-3xl mx-auto px-4 h-full flex flex-col items-center justify-center text-center gap-5 pb-8">
             {/* Large Finnish flag logo */}
-            <div className="w-16 h-16 bg-white border-2 border-[#003399] rounded-full flex items-center justify-center shadow-lg">
-              <svg width="36" height="23" viewBox="0 0 36 23" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <div className="w-24 h-[60px] bg-white border-2 border-[#003399] rounded-xl flex items-center justify-center shadow-lg overflow-hidden">
+              <svg className="w-full h-full" viewBox="0 0 36 23" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                 <rect width="36" height="23" fill="white" />
                 <rect y="9" width="36" height="5" fill="#003399" />
                 <rect x="11" y="0" width="5" height="23" fill="#003399" />

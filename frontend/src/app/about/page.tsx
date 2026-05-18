@@ -10,14 +10,13 @@ export const metadata: Metadata = {
 function FinnishFlag() {
   return (
     <svg
-      width="24"
-      height="15"
+      className="w-full h-full"
       viewBox="0 0 24 15"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"
     >
-      <rect width="24" height="15" rx="2" fill="white" />
+      <rect width="24" height="15" rx="1" fill="white" />
       <rect y="6" width="24" height="3" fill="#003399" />
       <rect x="7" y="0" width="3" height="15" fill="#003399" />
     </svg>
@@ -33,7 +32,7 @@ export default function AboutPage() {
         <Link
           href="/"
           aria-label="Back to home"
-          className="w-10 h-10 bg-white rounded-full flex items-center justify-center shrink-0 hover:bg-blue-100 transition-colors"
+          className="h-9 w-[58px] bg-white rounded-md flex items-center justify-center shrink-0 hover:bg-blue-100 transition-colors overflow-hidden"
         >
           <FinnishFlag />
         </Link>
