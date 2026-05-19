@@ -51,7 +51,7 @@ export default function AboutPage() {
           <h2 className="text-base font-bold text-gray-800 mb-2">How does it work?</h2>
           <p className="text-sm text-gray-600 leading-relaxed">
             FinnPermit Guide uses Retrieval-Augmented Generation (RAG). When you ask a question, it searches
-            1,532 text chunks scraped from official Finnish government sources, finds the most relevant
+            1,543 text chunks scraped from official Finnish government sources, finds the most relevant
             information, and generates a plain-English answer with citations. It does not guess — if it
             cannot find a sourced answer, it says so.
           </p>
