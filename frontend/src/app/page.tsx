@@ -77,10 +77,14 @@ export default function Home() {
 
       {/* ── Header ─────────────────────────────────────────── */}
       <header className="bg-[#003399] text-white px-4 py-3 flex items-center gap-3 shrink-0 shadow-md z-10">
-        <div className="min-w-0">
+        <button
+          onClick={handleClear}
+          aria-label="Home — clear conversation"
+          className="min-w-0 text-left hover:opacity-80 transition-opacity"
+        >
           <h1 className="font-black text-lg leading-tight tracking-tight">FinnPermit Guide</h1>
           <p className="text-blue-200 text-xs font-medium">AI Assistant for Finnish Immigration</p>
-        </div>
+        </button>
 
         <div className="ml-auto flex items-center gap-3 shrink-0">
           <Link

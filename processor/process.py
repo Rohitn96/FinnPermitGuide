@@ -132,6 +132,21 @@ CATEGORY_RULES: list[tuple[str, list[str]]] = [
         "te-palvelut", "te services", "te office", "employment office",
         "job seeker", "integration training", "integration services",
         "employment agency", "public employment", "unemployment register",
+        "tyomarkkinatori",
+    ]),
+    ("documents", [
+        "passport", "identity card", "alien's passport", "alien-s-passport",
+        "refugee travel document", "travel document", "driving licence",
+        "foreign driving", "driving-licence", "poliisi",
+    ]),
+    ("customs", [
+        "tulli", "customs", "moving-to-finland", "import", "vehicle import",
+        "pet import", "household goods", "duty-free", "goods for private use",
+    ]),
+    ("worker_rights", [
+        "tyosuojelu", "work-relationship", "foreign-employee", "sent-worker",
+        "employment contract", "minimum wage", "working hours", "worker protection",
+        "occupational safety", "working conditions",
     ]),
     ("housing", [
         "housing", "apartment", "rent", "rental", "lease",
@@ -192,7 +207,7 @@ def get_domain_tag(source: str) -> str:
         return "dvv"
     if "vero.fi" in source:
         return "vero"
-    if "te-palvelut" in source or "te-services" in source:
+    if "te-palvelut" in source or "te-services" in source or "tyomarkkinatori" in source:
         return "te_services"
     if "workinfinland.eu" in source:
         return "workinfinland"
@@ -200,6 +215,12 @@ def get_domain_tag(source: str) -> str:
         return "ihh"
     if "suomi.fi" in source:
         return "suomi"
+    if "poliisi.fi" in source:
+        return "poliisi"
+    if "tulli.fi" in source:
+        return "tulli"
+    if "tyosuojelu.fi" in source:
+        return "tyosuojelu"
     return "pdf" if source.endswith(".pdf") else "other"
 
 

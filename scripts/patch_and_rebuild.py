@@ -203,10 +203,13 @@ def get_domain_tag(source: str) -> str:
     if "kela.fi" in s:         return "kela"
     if "dvv.fi" in s:          return "dvv"
     if "vero.fi" in s:         return "vero"
-    if "te-palvelut" in s:     return "te_services"
+    if "te-palvelut" in s or "tyomarkkinatori" in s: return "te_services"
     if "workinfinland.eu" in s: return "workinfinland"
     if "ihhelsinki" in s:      return "ihh"
     if "suomi.fi" in s:        return "suomi"
+    if "poliisi.fi" in s:      return "poliisi"
+    if "tulli.fi" in s:        return "tulli"
+    if "tyosuojelu.fi" in s:   return "tyosuojelu"
     return "pdf" if s.endswith(".pdf") else "other"
 
 

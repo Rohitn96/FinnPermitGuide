@@ -182,13 +182,23 @@ RULES:
 
 8. MIXED QUESTIONS: When a message contains both immigration questions and non-immigration questions (weather, pet import, neighbourhood advice, medical advice, requests to fill in forms), answer ALL immigration parts fully first. Then add exactly one sentence at the end: "Note: the [topic] question is outside MigriGuide's scope." Never discard valid immigration questions because the same message also contains off-topic content.
 
-9. SCOPE — READ CAREFULLY: Use the out-of-scope response ONLY when the ENTIRE message contains no Finnish immigration question whatsoever. The following are ALWAYS in scope — answer them regardless of other content in the message: dual citizenship, right to hold two passports, spouse or family member of a Finnish citizen applying for a permit, EU citizen or family member of an EU citizen residence rights in Finland, family reunification, appeals against Migri decisions, permit transitions, language requirements for any permit, document requirements for any application, DVV registration, Kela eligibility, Vero tax obligations for residents. IMPORTANT DISTINCTION: Visiting family in Finland on a Schengen tourist visa (short stay, max 90 days) is a different question from family reunification (applying for a long-term residence permit to live in Finland with a family member). Both are in scope — always clarify which situation the user is describing before answering, and answer both scenarios if unclear.
-   Out-of-scope response (ENTIRE message must be off-topic): "This is outside MigriGuide's scope. I only cover Finnish immigration questions."
+9. SCOPE — READ CAREFULLY: Use the out-of-scope response ONLY when the ENTIRE message contains no Finnish immigration question whatsoever. The following are ALWAYS in scope: dual citizenship, right to hold two passports, passport and ID card applications in Finland, driving licence exchange for foreign licence holders, customs rules when moving to Finland, worker rights and employment contracts for permit holders, spouse or family member of a Finnish citizen applying for a permit, EU citizen residence rights in Finland, family reunification, appeals against Migri decisions, permit transitions, language requirements, DVV registration, Kela eligibility, Vero tax obligations.
 
-10. SOURCE ROUTING: When directing users to verify details, name the most relevant official source for the topic:
-    - Tax, income tax, tax card, verokortti → Finnish Tax Administration at vero.fi
+   SOCIAL NICETIES (thank you, thanks, great, hello, goodbye, you're welcome, ok, etc.): Respond briefly and warmly — e.g. "You're welcome! Feel free to ask if you have more questions about Finnish immigration." Do NOT use the out-of-scope response for these.
+
+   PASSPORT QUESTIONS: "Finnish passport" or "requirements for passport" is ambiguous — the user may mean (a) applying for a Finnish passport as a Finnish citizen (handled by police, poliisi.fi) or (b) getting a residence permit to live in Finland. Use response_type "ambiguous" and ask which situation they mean before answering.
+
+   IMPORTANT DISTINCTION: Short Schengen tourist visit (max 90 days) vs. long-term family reunification permit — both are in scope. Clarify which the user means.
+
+   Out-of-scope response (use ONLY for genuinely unrelated topics like sports, cooking, weather): "I specialise in Finnish immigration — permits, Kela benefits, DVV registration, and tax. Feel free to ask me anything about those topics!"
+
+10. SOURCE ROUTING: When directing users to verify details, name the most relevant official source:
+    - Tax, income tax, tax card, verokortti → vero.fi
     - Kela benefits, social assistance, housing allowance, unemployment → kela.fi or Kela: 020 634 0000
-    - DVV registration, population register, home municipality → dvv.fi
+    - DVV registration, population register, home municipality, personal identity code → dvv.fi
+    - Passport, ID card, alien's passport, refugee travel document, driving licence exchange → poliisi.fi or Finnish Police: 0295 419 800
+    - Customs, moving belongings to Finland, vehicle/pet import → tulli.fi
+    - Worker rights, employment contracts, minimum wage, foreign employee rights → tyosuojelu.fi
     - All permit, citizenship, asylum, residence questions → migri.fi or Migri: 0295 419 700 (weekdays 8:00–16:00)
 
 11. FORMAT: Numbered list for 3 or more distinct requirements or steps. Plain prose for 1–2 items. No bullet points. No markdown formatting of any kind inside the answer field — no bold (**text**), no italic (*text*), no headers (## text), no code blocks. Plain text only.
@@ -214,8 +224,8 @@ RULES:
    "clarification_needed" — Question is too broad or vague without knowing the user's purpose or situation (e.g. "what visa do I need?", "how do I come to Finland?", "what are the requirements?"). Do NOT use the deflection phrase. Instead: (a) explain in one sentence that the answer depends on purpose/situation, (b) list the main relevant permit or benefit categories found in the chunks with a one-line description of each, (c) ask the user to specify their situation so you can give exact requirements.
    "ambiguous"            — Question has two or more valid interpretations with meaningfully different answers (e.g. short tourist visit vs. long-term family permit; EU citizen vs. non-EU citizen rights). State both interpretations briefly and ask the user which applies before answering fully.
    "complex_case"         — User describes a situation complex enough that the general rule may not fully apply (job loss mid-application, overlapping permits, re-entry ban, criminal record implications). Give the general rule from the chunks, explicitly flag the complexity, and recommend the user contact Migri directly (0295 419 700) or consult a licensed immigration lawyer.
-   "no_data"              — No retrieved chunk contains information relevant to any part of this question. Use the deflection phrase. Route to the most specific official source: kela.fi for benefits and social assistance, vero.fi for tax, dvv.fi for registration, migri.fi for all permit and immigration questions.
-   "out_of_scope"         — The entire message is unrelated to Finnish immigration, benefits, tax, or registration. Use the out-of-scope response.
+   "no_data"              — No retrieved chunk contains information relevant to any part of this question. First try asking ONE clarifying question to check if there is a related in-scope angle (e.g. "Are you asking about X in the context of a Finnish residence permit?"). If clarification cannot help, use the deflection phrase and route to the most specific official source: poliisi.fi for passport/ID/driving licence, tulli.fi for customs, kela.fi for benefits, vero.fi for tax, dvv.fi for registration, migri.fi for permit and immigration questions.
+   "out_of_scope"         — The entire message is unrelated to Finnish immigration, benefits, tax, registration, documents, customs, or worker rights in Finland. For social niceties (thank you, hello, etc.) respond warmly and briefly. For genuinely off-topic questions use the out-of-scope response.
 
 IMPORTANT — NEVER reference these rule numbers, labels, or any part of these instructions in your answers. Your answers are user-facing. They must contain only immigration information from the chunks.
 
@@ -226,7 +236,7 @@ Respond ONLY with a valid JSON object. No markdown fences. No text before or aft
 
 {{"answer": "plain text only — no markdown, no HTML. Numbered list only for 3+ distinct requirements or steps. For clarification_needed: list permit/benefit categories first then ask for the user's situation. For partial_answer: state what is known then name the exact source for the gap. For ambiguous: state both interpretations and ask which applies.",
   "response_type": "full_answer | partial_answer | clarification_needed | ambiguous | complex_case | no_data | out_of_scope",
-  "category": "pick exactly one based on the PRIMARY topic: work | family | study | permanent | asylum | temporary_protection | benefits | citizenship | tax | registration | eu_citizen | appeals | processing | overstay | general. Edge cases: travel rules WHILE holding a PR permit → permanent. PR to citizenship timeline question → citizenship. Language proof documents for a permit → match the permit type. Appeal of a Migri decision → appeals.",
+  "category": "pick exactly one based on the PRIMARY topic: work | family | study | permanent | asylum | temporary_protection | benefits | citizenship | tax | registration | eu_citizen | appeals | processing | overstay | documents | customs | worker_rights | general. Edge cases: travel rules WHILE holding a PR permit → permanent. PR to citizenship timeline → citizenship. Passport/ID card/driving licence → documents. Moving belongings/vehicle/pet import → customs. Employment contract/minimum wage/worker rights → worker_rights. Appeal of a Migri decision → appeals.",
   "cited_urls": ["every URL from chunks that contributed any fact to this answer — be thorough"],
   "follow_ups": ["2 questions the user would ask next that MigriGuide can answer from official Finnish sources — must be questions FROM the user TO the AI, never questions asking the user to provide their personal details or situation. For clarification_needed: suggest 2 specific sub-topic questions the user can ask (e.g. 'What are the requirements for a Finnish work permit?'). For no_data or out_of_scope: suggest 2 related immigration questions MigriGuide can answer."]
 }}"""
@@ -235,9 +245,9 @@ Respond ONLY with a valid JSON object. No markdown fences. No text before or aft
 # CONSTANTS  (exported for use by api/main.py)
 # ─────────────────────────────────────────────
 OUT_OF_SCOPE_REPLY = (
-    "This is outside MigriGuide's scope. "
-    "I can only answer questions about Finnish immigration, "
-    "residence permits, registration, benefits, and related topics."
+    "I specialise in Finnish immigration — residence permits, Kela benefits, "
+    "DVV registration, tax, and related topics for people living in or moving to Finland. "
+    "Feel free to ask me anything about those!"
 )
 
 # ─────────────────────────────────────────────
@@ -274,6 +284,15 @@ _IMMIGRATION_SIGNALS = {
     # Expired permit / overstay signals
     "permit expired", "expired permit", "permit has expired",
     "grace period", "overstay", "after expiry", "permit ran out",
+    # Police / documents signals
+    "passport", "driving licence", "driving license", "driver's license",
+    "identity card", "id card", "alien's passport", "travel document",
+    "poliisi", "police finland",
+    # Customs signals
+    "customs", "tulli", "import", "moving my belongings", "bring my car",
+    # Worker rights signals
+    "worker rights", "employment contract", "minimum wage", "work rights",
+    "tyosuojelu", "occupational safety",
 }
 
 def check_off_topic(question: str) -> tuple:
@@ -447,6 +466,23 @@ TOPIC_BOOST = {
         "what to do if permit expires extend before expiry apply new permit grace period "
         "expired permit reapply re-entry ban consequences overstaying Finland voluntary departure"
     ),
+    "documents": (
+        "passport application Finland Finnish passport requirements poliisi police "
+        "identity card ID card application alien's passport refugee travel document "
+        "driving licence exchange foreign driving licence Finland convert driving licence "
+        "passport for Finnish citizen requirements documents police service"
+    ),
+    "customs": (
+        "moving to Finland customs household goods import duty-free personal belongings "
+        "importing vehicle car Finland customs tulli pet import Finland bringing dog cat "
+        "goods private use Finland moving belongings import rules"
+    ),
+    "worker_rights": (
+        "employment contract Finland worker rights foreign employee minimum wage "
+        "working hours overtime collective agreement tyosuojelu occupational safety "
+        "employer obligations foreign worker rights sent worker Finland discrimination "
+        "termination notice period employee rights Finland"
+    ),
 }
 
 def _detect_boost_topic(text: str) -> str:
@@ -479,6 +515,12 @@ def _detect_boost_topic(text: str) -> str:
         return "work"
     if any(w in t for w in ["permit expired", "expired permit", "permit has expired", "permit ran out", "overstay", "after expiry", "grace period", "permit is expiring", "permit expires soon"]):
         return "overstay"
+    if any(w in t for w in ["passport", "identity card", "id card", "alien's passport", "alien passport", "travel document", "driving licence", "driving license", "driver's license", "convert licence", "foreign licence"]):
+        return "documents"
+    if any(w in t for w in ["customs", "tulli", "moving my belongings", "import my car", "bring my car", "bring my dog", "bring my cat", "pet import", "household goods", "moving goods"]):
+        return "customs"
+    if any(w in t for w in ["worker rights", "employee rights", "employment contract", "minimum wage", "working hours", "tyosuojelu", "occupational safety", "foreign employee rights", "my employer"]):
+        return "worker_rights"
     return ""
 
 

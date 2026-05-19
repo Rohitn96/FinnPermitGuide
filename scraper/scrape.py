@@ -326,6 +326,50 @@ URLS = [
     "https://ihhelsinki.fi/services/social-security-benefits/",
     "https://ihhelsinki.fi/services/residence-permits/",
 
+    # ══════════════════════════════════════════════════════════════════════════
+    # POLIISI.FI — Finnish Police
+    # Passports, ID cards, alien's passport, refugee travel document,
+    # and foreign driving licence exchange — all handled by police, not Migri
+    # ══════════════════════════════════════════════════════════════════════════
+
+    "https://poliisi.fi/en/passport",
+    "https://poliisi.fi/en/identity-card",
+    "https://poliisi.fi/en/alien-s-passport",
+    "https://poliisi.fi/en/refugee-travel-document",
+    "https://poliisi.fi/en/driving-licence",
+    "https://poliisi.fi/en/foreign-driving-licences",
+    "https://poliisi.fi/en/passport-and-identity-card-for-a-minor",
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # TULLI.FI — Finnish Customs
+    # Moving household goods, importing vehicles/pets — asked by new residents
+    # ══════════════════════════════════════════════════════════════════════════
+
+    "https://tulli.fi/en/private-persons/moving-to-finland",
+    "https://tulli.fi/en/private-persons/vehicles",
+    "https://tulli.fi/en/private-persons/pets",
+    "https://tulli.fi/en/private-persons/goods-for-private-use",
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # TYOSUOJELU.FI — Occupational Safety & Worker Rights
+    # Foreign employee rights, employment contracts, minimum wage, working hours
+    # ══════════════════════════════════════════════════════════════════════════
+
+    "https://www.tyosuojelu.fi/en/work-relationship",
+    "https://www.tyosuojelu.fi/en/work-relationship/foreign-employee",
+    "https://www.tyosuojelu.fi/en/work-relationship/sent-worker",
+    "https://www.tyosuojelu.fi/en/working-conditions",
+    "https://www.tyosuojelu.fi/en/worker-protection",
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # TYOMARKKINATORI.FI — Employment Services (replaced te-palvelut.fi)
+    # Job seeker services, integration training, TE-office support
+    # ══════════════════════════════════════════════════════════════════════════
+
+    "https://tyomarkkinatori.fi/en/personal-customers",
+    "https://tyomarkkinatori.fi/en/personal-customers/work-life-information",
+    "https://tyomarkkinatori.fi/en/personal-customers/looking-for-work",
+
 ]
 
 
