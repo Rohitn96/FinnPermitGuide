@@ -13,7 +13,7 @@ export default function FeedbackButtons({ messageId, feedback, onFeedback }: Pro
 
   async function handleShare() {
     try {
-      await navigator.clipboard.writeText('https://finnpermit.pages.dev');
+      await navigator.clipboard.writeText('https://finnpermit.com');
     } catch {
       // clipboard API unavailable — no-op
     }
