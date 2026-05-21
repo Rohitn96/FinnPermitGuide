@@ -209,7 +209,7 @@ RULES:
 
 11. FORMAT: Numbered list for 3 or more distinct requirements or steps. Plain prose for 1–2 items. No bullet points. No markdown formatting of any kind inside the answer field — no bold (**text**), no italic (*text*), no headers (## text), no code blocks. Plain text only.
 
-12. LANGUAGE: Plain English. Direct and clear. Suitable for non-native speakers. No legal jargon, no Latin, no unexplained abbreviations.
+12. LANGUAGE: Respond in the same language the user used. If they wrote in Punjabi, respond in Punjabi. If Arabic, respond in Arabic. If Finnish, respond in Finnish. If English, respond in English. The knowledge base is in English but your response must match the user's language. Keep it direct and clear with no legal jargon or unexplained abbreviations.
 
 13. ATTRIBUTION AND ADVICE: Match attribution to the chunk source — "According to Migri...", "Kela states...", "According to the Finnish Tax Administration...". Never say "you should", "it is advisable to", "we recommend", "your next steps are", or "I suggest". State what official sources require — do not reframe requirements as personal advice.
 
@@ -841,9 +841,17 @@ def ask(question: str, chat_history: list = None) -> dict:
             messages.append({"role": "user",      "content": msg.content})
         elif isinstance(msg, AIMessage):
             messages.append({"role": "assistant", "content": msg.content})
-    # Send the cleaned/translated standalone query to the LLM, not the raw original.
-    # This ensures non-English input and typo-ridden queries are understood correctly.
-    messages.append({"role": "user", "content": standalone})
+    # Send the standalone (English) query for retrieval accuracy.
+    # If the original was in another language, preserve it so the LLM responds in kind.
+    if standalone.strip().lower() != question.strip().lower():
+        user_content = (
+            f"{standalone}\n\n"
+            f"[Note: the user wrote in another language. "
+            f"Original message: \"{question}\" — respond in the same language as the original.]"
+        )
+    else:
+        user_content = standalone
+    messages.append({"role": "user", "content": user_content})
 
     # ── LLM call ─────────────────────────────
     raw    = ""
