@@ -106,7 +106,7 @@ URLS = [
     "https://migri.fi/en/work-in-finland",
     "https://migri.fi/en/for-employers",
     "https://migri.fi/en/income-requirement",
-    "https://migri.fi/en/income-requirement-for-persons-who-apply-for-a-residence-permit-on-the-basis-of-work",
+    "https://migri.fi/en/working-in-finland/income-requirement",
     "https://migri.fi/en/incomes-register",
     "https://migri.fi/en/right-to-work",
 
