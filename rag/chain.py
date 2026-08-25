@@ -852,16 +852,15 @@ def ask(question: str, chat_history: list = None) -> dict:
             messages.append({"role": "user",      "content": msg.content})
         elif isinstance(msg, AIMessage):
             messages.append({"role": "assistant", "content": msg.content})
-    # Send the standalone (English) query for retrieval accuracy.
-    # If the original was in another language, preserve it so the LLM responds in kind.
-    if standalone.strip().lower() != question.strip().lower():
+    # Send the English standalone for retrieval accuracy.
+    # Always include the original message so the LLM can match the response language
+    # to what the user actually wrote (English stays English, Finnish stays Finnish, etc.)
+    user_content = standalone
+    if question.strip().lower() != standalone.strip().lower():
         user_content = (
             f"{standalone}\n\n"
-            f"[Note: the user wrote in another language. "
-            f"Original message: \"{question}\" — respond in the same language as the original.]"
+            f"[Respond in the SAME language as the user's original message: \"{question}\"]"
         )
-    else:
-        user_content = standalone
     messages.append({"role": "user", "content": user_content})
 
     # ── LLM call ─────────────────────────────
