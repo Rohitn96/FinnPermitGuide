@@ -92,10 +92,21 @@ if _use_pinecone:
                 )
                 if selected:
                     sel_vecs = candidate_vecs[selected]
-                    red_sims = (candidate_vecs[remaining] @ sel_vecs.T).max(axis=1) / (
-                        np.linalg.norm(candidate_vecs[remaining], axis=1)[:, None]
-                        * np.linalg.norm(sel_vecs, axis=1)[None, :] + 1e-9
+                    rem_vecs = candidate_vecs[remaining]
+                    # Cosine similarity of every remaining candidate against every
+                    # already-selected doc, then the max per candidate.
+                    #
+                    # The division must run on the full (r, s) matrix BEFORE the max.
+                    # Taking .max(axis=1) on the numerator first left an (r,) array
+                    # over an (r, 1) denominator, which broadcast to (r, r); the
+                    # flattened np.argmax below then returned an index far outside
+                    # `remaining` and raised IndexError on every call with k >= 2.
+                    denom = (
+                        np.linalg.norm(rem_vecs, axis=1)[:, None]
+                        * np.linalg.norm(sel_vecs, axis=1)[None, :]
+                        + 1e-9
                     )
+                    red_sims = ((rem_vecs @ sel_vecs.T) / denom).max(axis=1)
                 else:
                     red_sims = np.zeros(len(remaining))
                 scores = lambda_mult * q_sims - (1 - lambda_mult) * red_sims
