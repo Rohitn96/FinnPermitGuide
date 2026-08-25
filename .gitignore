@@ -8,7 +8,7 @@ __pycache__/
 *.egg-info/
 dist/
 
-# Environment — NEVER commit keys
+# Environment - NEVER commit keys
 .env
 
 # Local vector DB (can be rebuilt; 150MB+)
@@ -17,8 +17,14 @@ data/chroma_db/
 # Raw scraped data (can be re-scraped)
 data/raw/
 
+# Pinecone index backups (large, regenerable)
+data/backups/
+
 # Session logs (private user data)
 logs/
+
+# Claude Code local config (machine-specific paths and permissions)
+.claude/
 
 # OS
 .DS_Store
