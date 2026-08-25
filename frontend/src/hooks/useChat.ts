@@ -30,7 +30,14 @@ export function useChat() {
           body: JSON.stringify({ question, chat_history: chatHistory }),
         });
 
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        if (!res.ok) {
+          // Surface the backend's own message (rate limit, length cap) instead
+          // of a generic failure. Pydantic 422s put an array in `detail`, so
+          // only a plain string is safe to show.
+          const errBody = await res.json().catch(() => null);
+          const detail = typeof errBody?.detail === 'string' ? errBody.detail : null;
+          throw new Error(detail ?? 'Something went wrong. Please try again.');
+        }
 
         const data: AskResponse = await res.json();
 
@@ -48,13 +55,16 @@ export function useChat() {
 
         setMessages(prev => [...prev, aiMsg]);
         setChatHistory(data.chat_history);
-      } catch {
+      } catch (err) {
         setMessages(prev => [
           ...prev,
           {
             id: crypto.randomUUID(),
             role: 'assistant',
-            content: 'Something went wrong. Please try again.',
+            content:
+              err instanceof Error && err.message
+                ? err.message
+                : 'Something went wrong. Please try again.',
           },
         ]);
       } finally {
