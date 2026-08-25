@@ -215,6 +215,8 @@ def get_domain_tag(source: str) -> str:
         return "ihh"
     if "suomi.fi" in source:
         return "suomi"
+    if "enterfinland.fi" in source:
+        return "enterfinland"
     if "poliisi.fi" in source:
         return "poliisi"
     if "tulli.fi" in source:
@@ -290,10 +292,8 @@ def process_page(page: dict) -> list[dict]:
             "domain":          get_domain_tag(url),
             "chunk_id":        idx,
             "permit_category": classify_permit(url, chunk_text),
+            "scraped_date":    SCRAPED_DATE,
         }
-
-        if PROCESSING_TIMES_URL in url:
-            meta["scraped_date"] = SCRAPED_DATE
 
         chunks.append({"text": chunk_text, "metadata": meta})
 
