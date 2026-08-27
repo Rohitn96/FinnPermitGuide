@@ -86,7 +86,11 @@ DOMAIN_CONFIGS = {
     },
     "migri.fi": {
         "lang_prefix": "/en/",
-        "max_pages": 250,
+        # Raised from 250: the domain filled its budget one page short of the
+        # cap in two consecutive crawls, so discovery order alone decided which
+        # pages made it in. That dropped waiting-for-the-decision and the whole
+        # seasonal-work permit family between v1 and v2 (eval/known_gaps.md §4).
+        "max_pages": 320,
         "skip": ["/fi/", "/sv/", "/ar/", "/so/", "/ru/", "/sitemap", "?lang=", "/search"],
     },
     "infofinland.fi": {
@@ -153,7 +157,10 @@ DOMAIN_CONFIGS = {
     "tyomarkkinatori.fi": {
         "lang_prefix": "/en/",
         "max_pages": 40,
-        "skip": ["/fi/", "/sv/"],
+        # /news/ carries Finnish-language articles under an /en/ path, so
+        # lang_prefix does not catch them. Under a 40-page cap they displaced
+        # the English jobseeker guidance entirely (see eval/known_gaps.md §3).
+        "skip": ["/fi/", "/sv/", "/news/"],
     },
     "te-palvelut.fi": {
         "lang_prefix": "/en/",
