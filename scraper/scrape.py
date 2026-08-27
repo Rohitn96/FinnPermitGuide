@@ -17,6 +17,7 @@ Sources covered:
 import json
 import logging
 import re
+import socket
 import time
 from collections import deque
 from pathlib import Path
@@ -46,6 +47,14 @@ PDF_DIR.mkdir(parents=True, exist_ok=True)
 # ── Request config ─────────────────────────────────────────────────────────────
 REQUEST_DELAY = 1.5   # seconds between requests — respectful crawling
 TIMEOUT       = 25
+
+# Floor for socket operations that requests' per-call timeout= does not cover.
+#
+# Scope, so nobody over-trusts this: it does NOT bound DNS resolution.
+# socket.getaddrinfo() is a blocking C call that ignores Python socket timeouts,
+# so a hung resolver can still stall a fetch past this value. Bounding DNS needs
+# a resolver with its own timeout (e.g. dnspython) or a worker/watchdog thread.
+socket.setdefaulttimeout(TIMEOUT + 5)
 
 HEADERS = {
     "User-Agent": (
@@ -126,7 +135,10 @@ DOMAIN_CONFIGS = {
     "poliisi.fi": {
         "lang_prefix": "/en/",
         "max_pages": 50,
-        "skip": ["/fi/", "/sv/", "/ru/", "/ar/", "/so/"],
+        # /search and ?q= exclude site-search result pages. Sublink discovery
+        # found dozens of them (?q=traffic, ?q=organisations, ...), each ~8 KB
+        # of search UI that chunks into noise.
+        "skip": ["/fi/", "/sv/", "/ru/", "/ar/", "/so/", "/search", "?q="],
     },
     "tulli.fi": {
         "lang_prefix": "/en/",
