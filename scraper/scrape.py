@@ -100,7 +100,10 @@ DOMAIN_CONFIGS = {
     },
     "kela.fi": {
         "lang_prefix": None,
-        "max_pages": 90,
+        # Raised from 90: pinned at the cap in consecutive crawls, so discovery
+        # order alone decided the contents and it churned out
+        # medical-care-entitlement-finland and social-assistance-how-to-apply.
+        "max_pages": 130,
         "skip": ["/fi/", "/sv/", "/ar/", "/ru/", "/web/fi", "/web/sv",
                  "/web/ar", "?lang=fi", "?lang=sv"],
     },
@@ -151,7 +154,10 @@ DOMAIN_CONFIGS = {
     },
     "tyosuojelu.fi": {
         "lang_prefix": "/en/",
-        "max_pages": 50,
+        # Raised from 50: exactly cap-bound, churning 20 URLs per run. Cost
+        # employment-contract and rights-and-responsibilities-at-work, which are
+        # core worker-rights material.
+        "max_pages": 80,
         "skip": ["/fi/", "/sv/"],
     },
     "tyomarkkinatori.fi": {
@@ -496,10 +502,16 @@ SEED_URLS = [
     # TYOMARKKINATORI.FI — Employment Services (replaced te-palvelut.fi)
     # ══════════════════════════════════════════════════════════════════════════
 
+    # The /work-life-information, /looking-for-work and /integration-services
+    # paths all 404 now — the site moved search-for-work under
+    # /information-about-working-life/. Link discovery cannot reach the new
+    # locations because the surviving landing page renders its nav client-side,
+    # so the deep pages have to be seeded directly.
     "https://tyomarkkinatori.fi/en/personal-customers",
-    "https://tyomarkkinatori.fi/en/personal-customers/work-life-information",
-    "https://tyomarkkinatori.fi/en/personal-customers/looking-for-work",
-    "https://tyomarkkinatori.fi/en/personal-customers/integration-services",
+    "https://tyomarkkinatori.fi/en/personal-customers/information-about-working-life/search-for-work/services-to-support-job-seeking",
+    "https://tyomarkkinatori.fi/en/personal-customers/information-about-working-life/search-for-work/tips-for-finding-a-job",
+    "https://tyomarkkinatori.fi/en/personal-customers/information-about-working-life/search-for-work/registration-as-a-job-seeker",
+    "https://tyomarkkinatori.fi/en/personal-customers/unemployment/the-rights-and-responsibilities-of-unemployed-job-seekers",
 ]
 
 
