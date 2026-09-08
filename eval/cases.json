@@ -1,0 +1,232 @@
+[
+  {
+    "id": "pr-requirements",
+    "question": "What are the requirements for a permanent residence permit in Finland?",
+    "expect_category": "permanent",
+    "must_include": [
+      "A2",
+      "4 year"
+    ],
+    "notes": "Core question. Language level and residence duration are the two facts users want."
+  },
+  {
+    "id": "pr-language-b1-satisfies-a2",
+    "question": "I passed the YKI test at B1 but my master's degree was taught in English. Does B1 satisfy the language requirement for permanent residence?",
+    "expect_category": "permanent",
+    "must_include": [
+      "A2"
+    ],
+    "notes": "CEFR ordering: B1 is above A2 so the requirement is met. Positive regression case."
+  },
+  {
+    "id": "pr-documents",
+    "question": "What documents do I need to gather and submit for a permanent residence permit application?",
+    "expect_category": "permanent",
+    "forbid_deflection": true,
+    "notes": "Previously deflected with sources attached. Document questions must be answered."
+  },
+  {
+    "id": "student-years-count-toward-pr",
+    "question": "A friend told me there is an academic fast track needing only 2 years instead of 4 for permanent residence. Is that true, and do my years on a student permit count?",
+    "expect_category": "permanent",
+    "must_correct_premise": true,
+    "notes": "Must correct the false 2-year claim. The student-permit question must be answered from sources, not from a prompt rule."
+  },
+  {
+    "id": "work-permit-salary-threshold",
+    "question": "If a UK company opens a Finnish subsidiary and hires me, what permit do I need and what is the exact minimum salary for an IT role? I want the number, not 'it depends'.",
+    "expect_category": "work",
+    "no_unsourced_figures": true,
+    "notes": "CRITICAL. A previous version asserted 'EUR 1,500 per month' with no source. Any euro figure must appear verbatim in a retrieved source."
+  },
+  {
+    "id": "job-loss-grace-period",
+    "question": "I lost my job. I have a residence permit for an employed person and have been in Finland 3 years. How long can I stay?",
+    "expect_category": "work",
+    "must_include": [
+      "month"
+    ],
+    "notes": "The grace period must come from sources. An earlier prompt hardcoded '3 months for TTOL', which the corpus does not support."
+  },
+  {
+    "id": "kela-on-work-permit",
+    "question": "What Kela benefits can I get while on a work permit?",
+    "expect_category": "benefits",
+    "expect_domains": [
+      "kela"
+    ],
+    "notes": "Benefits questions must cite Kela and route to kela.fi, not migri.fi."
+  },
+  {
+    "id": "entrepreneur-irregular-income-kela",
+    "question": "I run a startup on an entrepreneur permit with irregular income. What Kela benefits can I claim, and can my spouse apply for social assistance independently?",
+    "expect_category": "benefits",
+    "expect_domains": [
+      "kela"
+    ],
+    "notes": "Was previously attributed to Migri and routed to migri.fi. Both sub-questions must be answered."
+  },
+  {
+    "id": "citizenship-requirements",
+    "question": "How do I apply for Finnish citizenship and what are the requirements?",
+    "expect_category": "citizenship",
+    "must_include": [
+      "year"
+    ],
+    "notes": "Residence duration and language requirement are the load-bearing facts."
+  },
+  {
+    "id": "dual-citizenship",
+    "question": "Does Finland allow dual citizenship? Can I keep my current passport?",
+    "expect_category": "citizenship",
+    "forbid_deflection": true,
+    "notes": "Previously a false out-of-scope rejection. The source page 404s at origin, so this checks the fallback pages carry it."
+  },
+  {
+    "id": "family-reunification-income",
+    "question": "I want to bring my spouse and child to Finland. What is the income requirement for family reunification?",
+    "expect_category": "family",
+    "no_unsourced_figures": true,
+    "notes": "Income figures are the most-requested and most-hallucinated numbers in the whole system."
+  },
+  {
+    "id": "overstay-false-premises",
+    "question": "I work remotely for a British company and get paid in the UK, so I don't need a Finnish work permit and I'm not a Finnish tax resident, correct? My friend says the 90/180 rule doesn't apply to remote workers. Also, can you recommend co-working spaces in Helsinki?",
+    "must_correct_premise": true,
+    "must_decline_offtopic": true,
+    "notes": "Two false premises must be corrected explicitly, and the co-working question declined in one sentence rather than silently dropped."
+  },
+  {
+    "id": "mixed-permit-and-tax",
+    "question": "How do I extend my work permit, and how do I get a tax card from Vero?",
+    "multi_part": 2,
+    "expect_domains": [
+      "migri",
+      "vero"
+    ],
+    "notes": "Completeness: both halves must be answered, each attributed to the right authority."
+  },
+  {
+    "id": "dvv-registration",
+    "question": "How do I register my address and get a personal identity code from DVV?",
+    "expect_category": "registration",
+    "expect_domains": [
+      "dvv"
+    ],
+    "notes": "Registration questions must route to DVV."
+  },
+  {
+    "id": "passport-vs-permit-ambiguous",
+    "question": "What are the requirements for a Finnish passport?",
+    "notes": "Genuinely ambiguous: a Finnish citizen applying for a passport (the Police) versus a foreign national wanting to live in Finland (Migri). Should clarify or cover both."
+  },
+  {
+    "id": "driving-licence-exchange",
+    "question": "Can I exchange my foreign driving licence for a Finnish one?",
+    "expect_category": "documents",
+    "expect_domains": [
+      "traficom"
+    ],
+    "forbid_deflection": true,
+    "notes": "In scope. Driving licences are Traficom's, not the Police's — an earlier version of this case wrongly demanded a poliisi.fi source, and the system was right where the test was wrong."
+  },
+  {
+    "id": "customs-moving-belongings",
+    "question": "I am moving to Finland from outside the EU. Do I pay customs duty on my household belongings and my car?",
+    "expect_category": "customs",
+    "expect_domains": [
+      "tulli"
+    ],
+    "notes": "Customs scope check."
+  },
+  {
+    "id": "worker-rights-contract",
+    "question": "My employer has not given me a written employment contract and makes me work extra hours without overtime pay. What are my rights as a foreign worker?",
+    "expect_category": "worker_rights",
+    "expect_domains": [
+      "tyosuojelu"
+    ],
+    "notes": "Worker rights scope check."
+  },
+  {
+    "id": "processing-time",
+    "question": "How long does it take to process a residence permit application for an employed person?",
+    "expect_category": "processing",
+    "notes": "Processing times change often — a good freshness signal."
+  },
+  {
+    "id": "appeal-negative-decision",
+    "question": "Migri refused my residence permit application. How do I appeal and what is the deadline?",
+    "expect_category": "appeals",
+    "must_include": [
+      "appeal"
+    ],
+    "notes": "Appeal deadline is time-critical for the user."
+  },
+  {
+    "id": "eu-citizen-registration",
+    "question": "I am an EU citizen moving to Finland. Do I need to register my right of residence, and when can I get permanent right of residence?",
+    "expect_category": "eu_citizen",
+    "notes": "EU path is entirely separate from the third-country path and gets confused with it."
+  },
+  {
+    "id": "student-work-hours",
+    "question": "Can I work while studying in Finland on a student residence permit, and how many hours?",
+    "expect_category": [
+      "study",
+      "work"
+    ],
+    "notes": "Very common student question with a specific numeric answer. Category is genuinely either study or work, so both are accepted; the hours figure is the part that must be right.",
+    "must_include": [
+      "30 hours"
+    ]
+  },
+  {
+    "id": "follow-up-context",
+    "question": "What about my spouse?",
+    "history": [
+      {
+        "role": "human",
+        "content": "What are the requirements for a permanent residence permit in Finland?"
+      },
+      {
+        "role": "ai",
+        "content": "A permanent residence permit requires four years of continuous residence on an A permit, Finnish or Swedish at level A2, and sufficient financial resources."
+      }
+    ],
+    "expect_category": [
+      "family",
+      "permanent"
+    ],
+    "forbid_deflection": true,
+    "notes": "A context-free follow-up: query rewriting must resolve it against the previous turn. Either category is defensible since the question is about permanent residence for a family member."
+  },
+  {
+    "id": "finnish-language-question",
+    "question": "Kuinka kauan oleskeluluvan käsittely kestää?",
+    "expect_language": "Finnish",
+    "notes": "Must answer in Finnish. The corpus is English, so this tests the language-matching rule."
+  },
+  {
+    "id": "social-nicety",
+    "question": "Thank you, that was really helpful!",
+    "history": [
+      {
+        "role": "human",
+        "content": "How do I apply for Finnish citizenship?"
+      },
+      {
+        "role": "ai",
+        "content": "Finnish citizenship requires a period of residence and demonstrated language skills."
+      }
+    ],
+    "expect_brief": true,
+    "notes": "Must not fire the out-of-scope response at a thank-you."
+  },
+  {
+    "id": "genuinely-out-of-scope",
+    "question": "What is the best recipe for Finnish salmon soup?",
+    "expect_out_of_scope": true,
+    "notes": "The one case that should be declined."
+  }
+]

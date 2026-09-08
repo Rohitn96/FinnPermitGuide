@@ -2,19 +2,17 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Install deps first (cached layer unless requirements change)
-COPY requirements-prod.txt .
-RUN pip install --no-cache-dir -r requirements-prod.txt
+# Dependencies first so the layer caches unless requirements change.
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy only the application code needed at runtime
+# Only what serves requests. The pipeline and its scraping dependencies stay out
+# of the image entirely.
 COPY rag/ ./rag/
 COPY api/ ./api/
 
-# Ensure logs directory exists
-RUN mkdir -p logs
-
-ENV PORT=8080
-ENV USE_PINECONE=true
+ENV PORT=8080 \
+    PYTHONUNBUFFERED=1
 
 EXPOSE 8080
 

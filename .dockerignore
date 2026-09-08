@@ -1,12 +1,10 @@
 .venv/
 __pycache__/
 *.pyc
-*.pyo
 .git/
 .env
+data/
+eval/
 frontend/
-data/chroma_db/
-logs/
-Testing/
-*.png
-render.yaml
+pipeline/
+*.md

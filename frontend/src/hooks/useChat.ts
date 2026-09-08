@@ -47,10 +47,10 @@ export function useChat() {
           content: data.answer,
           sources: data.sources,
           category: data.category,
+          quality: data.quality,
           lowConfidence: data.low_confidence,
           followUps: data.follow_ups,
           feedback: null,
-          responseType: data.response_type ?? null,
         };
 
         setMessages(prev => [...prev, aiMsg]);
@@ -80,13 +80,18 @@ export function useChat() {
         prev.map(m => (m.id === messageId ? { ...m, feedback: vote } : m)),
       );
       try {
-        const msg = messagesRef.current.find(m => m.id === messageId);
+        const index = messagesRef.current.findIndex(m => m.id === messageId);
+        const msg = messagesRef.current[index];
+        // A vote only means something alongside the question that produced the
+        // answer, so send the user turn immediately preceding it.
+        const question = index > 0 ? messagesRef.current[index - 1].content : '';
         await fetch('/api/feedback', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             message_id: messageId,
             vote,
+            question,
             answer: msg?.content ?? '',
           }),
         });

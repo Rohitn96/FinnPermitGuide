@@ -1,0 +1,11 @@
+# Extra dependencies for rebuilding the knowledge base and running evals.
+# Not installed in the API container — scraping libraries have no business in
+# a request-serving image.
+
+-r requirements.txt
+
+requests>=2.32.0
+beautifulsoup4>=4.12.0
+lxml>=5.2.0
+PyMuPDF>=1.24.5
+langchain-text-splitters>=0.3.0

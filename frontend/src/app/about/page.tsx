@@ -36,13 +36,16 @@ export default function AboutPage() {
           <h2 className="text-base font-bold text-gray-800 mb-2">What is FinnPermit Guide?</h2>
           <p className="text-sm text-gray-600 leading-relaxed">
             FinnPermit Guide is a free AI assistant that answers questions about Finnish immigration, Kela
-            benefits, DVV registration, and tax obligations. All answers are sourced exclusively from
-            official Finnish government websites:{' '}
+            benefits, DVV registration, tax, documents, customs, and workers&apos; rights. All answers are
+            sourced exclusively from official Finnish government websites:{' '}
             <a href="https://migri.fi" target="_blank" rel="noopener noreferrer" className="text-[#003399] underline">migri.fi</a>,{' '}
             <a href="https://kela.fi" target="_blank" rel="noopener noreferrer" className="text-[#003399] underline">kela.fi</a>,{' '}
             <a href="https://vero.fi" target="_blank" rel="noopener noreferrer" className="text-[#003399] underline">vero.fi</a>,{' '}
-            <a href="https://dvv.fi" target="_blank" rel="noopener noreferrer" className="text-[#003399] underline">dvv.fi</a>, and{' '}
-            <a href="https://infofinland.fi" target="_blank" rel="noopener noreferrer" className="text-[#003399] underline">infofinland.fi</a>.
+            <a href="https://dvv.fi" target="_blank" rel="noopener noreferrer" className="text-[#003399] underline">dvv.fi</a>,{' '}
+            <a href="https://infofinland.fi" target="_blank" rel="noopener noreferrer" className="text-[#003399] underline">infofinland.fi</a>,{' '}
+            <a href="https://poliisi.fi" target="_blank" rel="noopener noreferrer" className="text-[#003399] underline">poliisi.fi</a>,{' '}
+            <a href="https://tulli.fi" target="_blank" rel="noopener noreferrer" className="text-[#003399] underline">tulli.fi</a>, and{' '}
+            <a href="https://tyosuojelu.fi" target="_blank" rel="noopener noreferrer" className="text-[#003399] underline">tyosuojelu.fi</a>.
           </p>
         </section>
 
@@ -50,10 +53,12 @@ export default function AboutPage() {
         <section>
           <h2 className="text-base font-bold text-gray-800 mb-2">How does it work?</h2>
           <p className="text-sm text-gray-600 leading-relaxed">
-            FinnPermit Guide uses Retrieval-Augmented Generation (RAG). When you ask a question, it searches
-            1,543 text chunks scraped from official Finnish government sources, finds the most relevant
-            information, and generates a plain-English answer with citations. It does not guess — if it
-            cannot find a sourced answer, it says so.
+            When you ask a question, FinnPermit Guide searches a knowledge base built by crawling official
+            Finnish government websites, ranks the passages that actually answer your question, and writes
+            an answer using only those passages — with links to every page it drew on. It is instructed
+            never to rely on the model&apos;s own knowledge of immigration law, which goes out of date.
+            If the official sources do not cover your question, it says so and points you at the authority
+            that can answer it, rather than guessing.
           </p>
         </section>
 

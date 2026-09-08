@@ -7,27 +7,36 @@ export interface Source {
   url: string;
   title: string;
   domain: string;
-  category: string;
+  /** Human-readable authority name, e.g. "Finnish Immigration Service (Migri)". */
+  authority?: string;
 }
+
+/** How well the knowledge base covered the question. */
+export type AnswerQuality =
+  | 'complete'
+  | 'partial'
+  | 'needs_clarification'
+  | 'not_in_sources';
 
 export interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
+  /** Markdown for assistant messages, plain text for user messages. */
   content: string;
   sources?: Source[];
   category?: string | null;
+  quality?: AnswerQuality;
   lowConfidence?: boolean;
   followUps?: string[];
   feedback?: 'up' | 'down' | null;
-  responseType?: string | null;
 }
 
 export interface AskResponse {
   answer: string;
   sources: Source[];
   category: string | null;
+  quality: AnswerQuality;
   low_confidence: boolean;
-  chat_history: HistoryMessage[];
   follow_ups: string[];
-  response_type?: string | null;
+  chat_history: HistoryMessage[];
 }

@@ -27,7 +27,23 @@ export default function Home() {
   const { messages, isLoading, sendMessage, submitFeedback, clearConversation } = useChat();
   const [input, setInput] = useState('');
   const [bannerVisible, setBannerVisible] = useState(true);
+  const [corpusDate, setCorpusDate] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    fetch('/api/status')
+      .then(r => r.json())
+      .then(({ corpus_date }) => {
+        if (!corpus_date) return;
+        setCorpusDate(
+          new Date(corpus_date).toLocaleDateString('en-GB', {
+            month: 'long',
+            year: 'numeric',
+          }),
+        );
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (sessionStorage.getItem('disclaimerAcknowledged')) {
@@ -293,12 +309,15 @@ export default function Home() {
         </p>
       </footer>
 
-      {/* ── Data freshness badge (fixed) ────────────────────── */}
-      <div className="fixed bottom-36 right-3 z-20 pointer-events-none">
-        <span className="text-[10px] text-gray-500 bg-white/90 border border-gray-200 rounded-full px-2.5 py-1 shadow-sm">
-          📅 Data: May 2026
-        </span>
-      </div>
+      {/* ── Data freshness badge ───────────────────────────── */}
+      {/* Read from the API so it always reflects the corpus actually in use. */}
+      {corpusDate && (
+        <div className="fixed bottom-36 right-3 z-20 pointer-events-none">
+          <span className="text-[10px] text-gray-500 bg-white/90 border border-gray-200 rounded-full px-2.5 py-1 shadow-sm">
+            Sources updated {corpusDate}
+          </span>
+        </div>
+      )}
 
     </div>
   );

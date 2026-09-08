@@ -6,13 +6,14 @@ const STYLES: Record<string, string> = {
   citizenship:          'bg-yellow-50 text-yellow-700 border-yellow-200',
   benefits:             'bg-teal-50 text-teal-700 border-teal-200',
   asylum:               'bg-red-50 text-red-700 border-red-200',
-  temporary_protection: 'bg-orange-50 text-orange-700 border-orange-200',
   tax:                  'bg-orange-50 text-orange-700 border-orange-200',
   registration:         'bg-slate-50 text-slate-700 border-slate-200',
   eu_citizen:           'bg-blue-50 text-blue-700 border-blue-200',
   appeals:              'bg-red-50 text-red-700 border-red-200',
   processing:           'bg-indigo-50 text-indigo-700 border-indigo-200',
-  overstay:             'bg-red-50 text-red-700 border-red-200',
+  documents:            'bg-slate-50 text-slate-700 border-slate-200',
+  customs:              'bg-yellow-50 text-yellow-700 border-yellow-200',
+  worker_rights:        'bg-rose-50 text-rose-700 border-rose-200',
   general:              'bg-gray-50 text-gray-600 border-gray-200',
 };
 
@@ -24,13 +25,14 @@ const LABELS: Record<string, string> = {
   citizenship:          'Citizenship',
   benefits:             'Benefits',
   asylum:               'Asylum',
-  temporary_protection: 'Temporary Protection',
   tax:                  'Tax',
   registration:         'Registration',
   eu_citizen:           'EU Citizen',
   appeals:              'Appeals',
   processing:           'Processing',
-  overstay:             'Overstay',
+  documents:            'Documents',
+  customs:              'Customs',
+  worker_rights:        'Workers’ Rights',
   general:              'General',
 };
 
